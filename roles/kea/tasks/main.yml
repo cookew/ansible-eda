@@ -1,0 +1,132 @@
+---
+
+
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ kea_distro_info[ansible_facts.distribution].packages | default(kea_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enable services
+  become: true
+  loop: "{{ kea_distro_info[ansible_facts.distribution].services | default(kea_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    label: "{{ service.name | default(service) }}"
+    loop_var: service
+  when:
+    - (service.enable is defined and service.enable) or
+      not service.enable is defined
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service.name | default(service) }}"
+
+
+- name: Start services
+  become: true
+  loop: "{{ kea_distro_info[ansible_facts.distribution].services | default(kea_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    label: "{{ service.name | default(service) }}"
+    loop_var: service
+  when:
+    - (service.start is defined and service.start) or
+      not service.start is defined
+  ansible.builtin.systemd_service:
+    name: "{{ service.name | default(service) }}"
+    state: started
+
+
+- name: Disable services
+  become: true
+  loop: "{{ kea_distro_info[ansible_facts.distribution].services | default(kea_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    label: "{{ service.name | default(service) }}"
+    loop_var: service
+  when:
+    - service.enable is defined
+    - not service.enable
+  ansible.builtin.systemd_service:
+    enabled: false
+    name: "{{ service.name | default(service) }}"
+
+
+- name: Stop services
+  become: true
+  loop: "{{ kea_distro_info[ansible_facts.distribution].services | default(kea_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    label: "{{ service.name | default(service) }}"
+    loop_var: service
+  when:
+    - service.stop is defined
+    - service.stop
+  ansible.builtin.systemd_service:
+    enabled: false
+    name: "{{ service.name | default(service) }}"
+    state: stopped
+
+
+- name: Get service facts
+  become: true
+  ansible.builtin.service_facts:
+
+
+- name: Enable Firewalld ports
+  become: true
+  loop:
+    - 67/udp
+    - "{{ kea_control_agent_port }}/tcp"
+    - "{{ kea_high_availability_port }}/tcp"
+  loop_control:
+    loop_var: port
+  when:
+    - '"firewalld.service" in ansible_facts["services"]'
+  ansible.posix.firewalld:
+    immediate: true
+    permanent: true
+    port: "{{ port }}"
+    state: enabled
+
+
+- name: Enable UFW ports
+  become: true
+  loop:
+    - 67/udp
+    - "{{ kea_control_agent_port }}/tcp"
+    - "{{ kea_high_availability_port }}/tcp"
+  loop_control:
+    loop_var: port
+  when:
+    - '"ufw.service" in ansible_facts["services"]'
+  community.general.ufw:
+    port: "{{ port | split('/') | first }}"
+    proto: "{{ port | split('/') | last }}"
+    rule: allow
+
+
+- name: Create configuration directory
+  become: true
+  ansible.builtin.file:
+    group: root
+    mode: "0755"
+    owner: root
+    path: "{{ kea_distro_info[ansible_facts.distribution].configuration_path | default(kea_family_info[ansible_facts.os_family].configuration_path) }}"
+    state: directory
+
+
+- name: Copy kea configuration files
+  become: true
+  loop: "{{ kea_distro_info[ansible_facts.distribution].templates | default(kea_family_info[ansible_facts.os_family].templates) }}"
+  loop_control:
+    label: kea_fil.dest
+    loop_var: kea_file
+  notify: kea_config
+  ansible.builtin.template:
+    dest: "{{ kea_file.dest }}"
+    group: "{{ kea_file.group }}"
+    mode: "{{ kea_file.mode }}"
+    owner: "{{ kea_file.owner }}"
+    src: "{{ kea_file.src }}.j2"
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

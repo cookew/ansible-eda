@@ -1,0 +1,22 @@
+- name: Reload haproxy
+  become: true
+  listen: haproxy_reload
+  ansible.builtin.systemd_service:
+    name: haproxy.service
+    state: reloaded
+
+
+- name: Stop container
+  become: false
+  listen: container_restart
+  containers.podman.podman_container:
+    name: repo
+    state: stopped
+
+
+- name: Start container
+  become: false
+  listen: container_restart
+  containers.podman.podman_container:
+    name: repo
+    state: started

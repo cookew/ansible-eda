@@ -1,0 +1,38 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/package_facts_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/template_module.html
+
+
+- name: Get package listing
+  become: true
+  ansible.builtin.package_facts:
+
+
+- name: Create Firefox policy directory
+  become: true
+  when:
+    - "'firefox' in ansible_facts.packages"
+    - firefox_policy is defined
+  ansible.builtin.file:
+    path: /etc/firefox/policies
+    group: root
+    mode: "0755"
+    owner: root
+    state: directory
+
+
+- name: Add Firefox policy
+  become: true
+  when:
+    - "'firefox' in ansible_facts.packages"
+    - firefox_policy is defined
+  ansible.builtin.template:
+    dest: /etc/firefox/policies/policies.json
+    group: root
+    mode: "0644"
+    src: policies.j2
+    owner: root

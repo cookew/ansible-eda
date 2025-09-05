@@ -1,0 +1,96 @@
+- name: Copy proxy configs
+  become: true
+  loop:
+    - 41-repo.cfg
+  loop_control:
+    loop_var: file
+  notify: haproxy_reload
+  ansible.builtin.template:
+    dest: "/etc/haproxy/conf.d/{{ file }}"
+    group: root
+    mode: "0644"
+    owner: root
+    src: "{{ file }}.j2"
+
+
+- name: Add proxy backend config
+  become: true
+  vars:
+    proxy:
+      - name: repo
+        alpn: alpn h2,http/1.1
+        cert: "{{ repo_cert }}"
+        http_frontend_config: |
+          use_backend repo if { hdr(host) -i repo.{{ domain_name }} }
+        https_frontend_config: |
+          use_backend repo if { hdr(host) -i repo.{{ domain_name }} }
+  ansible.builtin.import_role:
+    name: haproxy
+    tasks_from: add_proxy.yml
+
+
+- name: Remove existing podman Repo Nginx NFS volume
+  become: false
+  containers.podman.podman_volume:
+    name: repo_html
+    # options:
+    #   - "device={{ ipxe_html_nfs_host }}:{{ ipxe_html_nfs_path }}"
+    #   - "o=rw"
+    #   - "type=nfs"
+    state: absent
+
+
+- name: Create Nginx etc directory
+  become: true
+  notify: container_restart
+  ansible.builtin.file:
+    group: root
+    mode: "0755"
+    owner: root
+    path: /etc/nginx-repo
+    state: directory
+
+
+- name: Copy nginx config
+  become: true
+  loop:
+    - nginx-repo.conf
+  loop_control:
+    loop_var: file
+  notify: container_restart
+  ansible.builtin.template:
+    dest: "/etc/nginx-repo/{{ file }}"
+    group: root
+    mode: "0644"
+    owner: root
+    src: "{{ file }}.j2"
+
+
+- name: Run Repo Nginx container
+  become: false
+  containers.podman.podman_container:
+    cpus: 0.25
+    detach: true
+    image: docker.io/library/nginx:1.28.0
+    image_strict: true
+    image_volume: ignore
+    # memory: 32m
+    name: repo
+    publish:
+      - 8003:80/tcp
+    pull: missing
+    # read_only: true
+    read_only_tmpfs: true
+    restart_policy: always
+    shm_size: 8m
+    shm_size_systemd: 8m
+    state: started
+    timezone: local
+    tls_verify: true
+    volume:
+      - "/net/{{ repo_html_nfs_host }}{{ repo_html_nfs_path }}:/usr/share/nginx/html:ro"
+      - "/etc/nginx-repo:/etc/nginx/conf.d:ro"
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

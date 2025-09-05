@@ -1,0 +1,182 @@
+bind_family_info:
+  Debian:
+    named_conf_path: /etc/bind/named.conf
+    group_name: bind
+    owner_name: bind
+    packages:
+      - bind9
+      - bind9-dnsutils
+      - bind9-utils
+      - python3-dnspython # needed for ansible nsupdate module
+    services:
+      - named.service
+  RedHat:
+    named_conf_path: /etc/named.conf
+    group_name: named
+    owner_name: named
+    packages:
+      - bind
+      - bind-chroot
+      - bind-utils
+    services:
+      - named.service
+
+
+bind_acls:
+  - name: trusted
+    entries:
+      - localhost
+      - fd00::/8
+      - fe80::/16
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+  - name: xfer
+    entries:
+      - fd00::/8
+      - fe80::/16
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+
+
+bind_controls: []
+  # - source_ip: "*"
+  #   port: 953
+  #   acls:
+  #     - trusted
+  #   key_list:
+  #     -
+
+
+# rndc-confgen -A hmac-sha256 | grep secret | tail -n 1 | cut -d '"' -f 2
+bind_keys:
+  ansible:
+    algorithm: hmac-sha256
+    secret:
+  catalog:
+    algorithm: hmac-sha256
+    secret:
+  dhcp_dynamic_dns:
+    algorithm: hmac-sha256
+    secret:
+  # custom:
+  #   - name:
+  #     algorithm:
+  #     secret:
+
+
+bind_logging_catagories:
+  - category: default
+    output: default_syslog
+  # - category: general
+  #   output: default_syslog
+  # - category: queries
+  #   output: default_syslog
+  # - category: resolver
+  #   output: default_syslog
+  # - category: database
+  #   output: default_syslog
+  # - category: security
+  #   output: default_syslog
+  # - category: config
+  #   output: default_syslog
+  # - category: xfer-in
+  #   output: default_syslog
+  # - category: xfer-out
+  #   output: default_syslog
+  # - category: notify
+  #   output: default_syslog
+  # - category: client
+  #   output: default_syslog
+  # - category: unmatched
+  #   output: default_syslog
+  # - category: network
+  #   output: default_syslog
+  # - category: update
+  #   output: default_syslog
+  # - category: dispatch
+  #   output: default_syslog
+  # - category: dnssec
+  #   output: default_syslog
+  # - category: lame-servers
+  #   output: default_syslog
+
+bind_options_allow_query_acls:
+  - trusted
+
+bind_options_allow_recursion_acls:
+  - trusted
+
+bind_options_allow_transfer_acls:
+  - none
+
+bind_options_auth_nxdomain: "no"
+
+bind_options_automatic_interface_scan: "yes"
+
+bind_options_dnssec_validation: "no"
+
+# bind_options_empty_contact: hostmaster.
+
+bind_options_empty_zones_enable: "yes"
+
+bind_options_forward: first
+
+bind_options_forwarders:
+  - 8.8.8.8
+  - 8.8.4.4
+
+# bind_options_interface_interval:
+
+bind_options_listen_on:
+  - any
+
+bind_options_listen_on_v6:
+  - any
+
+bind_options_max_cache_size: 50%
+
+bind_options_recursion: "yes"
+
+bind_options_validate_except_list: []
+
+# bind_primary_server_ipv4:
+# bind_primary_server_ipv6:
+
+# bind_primary_server_hostname:
+
+bind_blackhole_lists: []
+  # - name: sites
+  #   zones: []
+
+bind_catalog_zones: []
+
+bind_zones: []
+  # - zone: home.me
+  #   allow_transfer_acls:
+  #     - xfer
+  #   forwarders: []
+  #   type: primary
+  #   update_policies:
+  #     - action: grant
+  #       key: rndc-key
+  #       zonesub: ANY
+  # - zone: 0.0.10.in-addr.arpa
+  #   allow_transfer_acls:
+  #     - xfer
+  #   forwarders: []
+  #   type: primary
+  #   update_policies:
+  #     - action: grant
+  #       key: rndc-key
+  #       zonesub: PTR
+  # - zone: 0.0.d.f.ip6.arpa
+  #   allow_transfer_acls:
+  #     - xfer
+  #   forwarders: []
+  #   type: primary
+  #   update_policies:
+  #     - action: grant
+  #       key: rndc-key
+  #       zonesub: PTR

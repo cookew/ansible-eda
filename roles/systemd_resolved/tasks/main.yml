@@ -1,0 +1,37 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/community/general/ini_file_module.html
+
+
+- name: Get service status
+  ansible.builtin.service_facts:
+
+
+- name: Disabling systemd-resolved options
+  become: true
+  loop:
+    - LLMNR
+    - DNSStubListener
+  loop_control:
+    loop_var: option
+  notify: systemd_resolved_config
+  when:
+    - "'systemd-resolved.service' in ansible_facts.services"
+    - ansible_facts.services["systemd-resolved.service"].status == "enabled"
+  community.general.ini_file:
+    group: root
+    mode: "0644"
+    modify_inactive_option: true
+    no_extra_spaces: true
+    option: "{{ option }}"
+    owner: root
+    path: /etc/systemd/resolved.conf
+    section: Resolve
+    state: present
+    value: "no"
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

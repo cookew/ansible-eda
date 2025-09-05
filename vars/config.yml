@@ -1,0 +1,248 @@
+---
+
+
+# Uncomment to remove /etc/motd.d
+# motd_remove_directory: true
+
+
+# Set a custom motd
+# motd: |
+
+
+# Auto logoff
+# integer: in minutes sets logoff time
+# false: disables logoff
+# commented out leaves existing settings
+# logoff_timeout_minutes: false
+
+
+sudoers:
+  - name: sudo-nopasswd
+    commands: ALL
+    group: sudo
+    nopasswd: true
+
+
+shell_aliases: |
+  alias ll="ls --color -lh"
+  alias l.="ls --color -alh"
+  alias free="free -mt"
+  alias du="du -h"
+  alias df="df -h"
+  alias ip="ip -c"
+  alias ls='ls --color=auto'
+  alias grep='grep --color'
+  alias vi='vim'
+
+  export LESSCOLOR=yes
+
+  alias egrep='egrep --colour=auto'
+  alias fgrep='fgrep --colour=auto'
+
+
+vimrc: |
+  filetype indent on
+  filetype plugin on
+
+  set background=dark
+  set cul
+  set ignorecase
+  set incsearch
+  set laststatus=2
+  set modeline
+  set mouse=a
+  set number
+  set paste
+  set ruler
+  set scrolloff=5
+  set showmatch
+  set title
+
+  if &t_Co > 2 || has("gui_running")
+    syntax on
+    set hlsearch
+  endif
+
+
+home_bin: |
+  if ! [[ "${PATH}" =~ "${HOME}/bin:" ]]
+  then
+    PATH="${HOME}/bin:${PATH}"
+  fi
+  if ! [[ "${PATH}" =~ "${HOME}/.local/bin:" ]]
+  then
+    PATH="${HOME}/.local/bin:${PATH}"
+  fi
+
+
+ps1_color: |
+  # Source is from Gentoo Linux
+  # /etc/bash/bashrc.d/10-gentoo-color.bash
+  if [[ ${NO_COLOR} ]]; then
+          # Respect the user's wish not to use color. See https://no-color.org/.
+          gentoo_color=0
+  elif [[ ${COLORTERM@a} == *x* && ${COLORTERM} == @(24bit|truecolor) ]]; then
+          # The COLORTERM environment variable can reasonably be trusted here.
+          # See https://github.com/termstandard/colors for further information.
+          gentoo_color=1
+  elif unset -v COLORTERM; ! gentoo_color=$(tput colors 2>/dev/null); then
+          # Either ncurses is not installed or no terminfo database could be
+          # found. Fall back to a whitelist which covers the majority of terminal
+          # emulators and virtual console implementations known to support color
+          # and which remain (somewhat) popular. This will rarely happen, so the
+          # list need not be exhaustive.
+          case ${TERM} in
+                  *color*    |\
+                  *direct*   |\
+                  [Ekx]term* |\
+                  alacritty  |\
+                  aterm      |\
+                  dtterm     |\
+                  foot*      |\
+                  jfbterm    |\
+                  linux      |\
+                  mlterm     |\
+                  rxvt*      |\
+                  screen*    |\
+                  tmux*      |\
+                  wsvt25*    ) gentoo_color=1
+          esac
+  elif (( gentoo_color == 16777216 )); then
+          # Truecolor support is available. Advertise it.
+          export COLORTERM=truecolor
+  fi
+
+  # For direxpand to be missing indicates that bash is lacking readline support.
+  if (( gentoo_color <= 0 )) || [[ ! $(shopt -p direxpand 2>/dev/null) ]]; then
+          # Define a prompt without color.
+          PS1='\u@\h \w \$ '
+  elif (( EUID == 0 )); then
+          # If root, omit the username and print the hostname in red.
+          PS1='\[\e[01;31m\]\h\[\e[01;34m\] \w \$\[\e[00m\] '
+  else
+          # Otherwise, print the username and hostname in green.
+          PS1='\[\e[01;32m\]\u@\h\[\e[01;34m\] \w \$\[\e[00m\] '
+  fi
+  if (( gentoo_color > 0 )); then
+          # Colorize the output of diff(1), grep(1) and a few coreutils utilities.
+          for _ in diff dir grep ls vdir; do
+                  alias "$_=$_ --color=auto"
+          done
+
+          # Enable colors for ls(1) and some other utilities that respect the
+          # LS_COLORS variable. Prefer ~/.dir_colors, per bug #64489.
+          if hash dircolors 2>/dev/null; then
+                  if [[ -f ~/.dir_colors ]]; then
+                          eval "$(dircolors -b -- ~/.dir_colors)"
+                  elif [[ -f /etc/DIR_COLORS ]]; then
+                          eval "$(dircolors -b /etc/DIR_COLORS)"
+                  else
+                          eval "$(dircolors -b)"
+                  fi
+          fi
+  fi
+
+  unset -v gentoo_color
+
+
+# https://github.com/mozilla/policy-templates/blob/master/README.md#preferences
+firefox_policy: |
+  {
+    "policies": {
+      "BlockAboutAddons": true,
+      "Certificates": {
+        "ImportEnterpriseRoots": true
+      },
+      "DisableFeedbackCommands": true,
+      "DisableFirefoxAccounts": true,
+      "DisableFirefoxStudies": true,
+      "DisablePocket": true,
+      "DisableTelemetry": true,
+      "DNSOverHTTPS": {
+        "Enabled": false
+      },
+      "DontCheckDefaultBrowser": true,
+      "FirefoxHome": {
+        "Highlights": false,
+        "Locked": true,
+        "Pocket": false,
+        "Search": false,
+        "Snippets": false,
+        "SponsoredPocket": false,
+        "SponsoredTopSites": false,
+        "TopSites": false
+      },
+      "GoToIntranetSiteForSingleWordEntryInAddressBar": true,
+      "Homepage": {
+        "Locked": false,
+        "URL": "https://wcooke.org/",
+        "StartPage": "previous-session"
+      },
+      "NoDefaultBookmarks": true,
+      "OverrideFirstRunPage": "",
+      "OverridePostUpdatePage": "",
+      "SearchSuggestEnabled": false,
+      "UserMessaging": {
+        "ExtensionRecommendations": false,
+        "FeatureRecommendations": false,
+        "MoreFromMozilla": false,
+        "SkipOnboarding": true,
+        "UrlbarInterventions": false,
+        "WhatsNew": true
+      }
+    }
+  }
+
+
+vsphere:
+  cluster: 'workload'
+  datacenter: 'Home'
+  datastore: 'vsan'
+  network: 'access'
+
+
+kubernetes:
+  version: '1.31.0'
+
+
+repos:
+  docker:
+    apt:
+      gpg_url: 'https://repo.wcooke.me/deb/download.docker.com.gpg'
+      name: 'docker'
+      url: 'https://repo.wcooke.me/deb/deb.debian.org/'
+    rpm:
+      name: 'docker'
+      baseurl: 'https://repo.wcooke.me/rpm/docker-ce-centos-$releasever/'
+      description: 'Docker'
+  kubernetes:
+    apt:
+      gpg_url: 'https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.version }}/deb/Release.key'
+      name: 'kubernetes'
+      url: 'https://pkgs.k8s.io/core:/stable:/v{{ kubernetes.version }}/deb/'
+    # rpm:
+    #   name: 'kubernetes'
+    #   baseurl:
+    #   description: 'Kubernetes'
+  redhat-appstream:
+    rpm:
+      name: 'local-rhel-x86_64-appstream'
+      baseurl: 'https://repo.wcooke.me/rpm/rhel-$releasever-x86_64-appstream/'
+      description: 'Appstream'
+  redhat-baseos:
+    rpm:
+      name: 'local-rhel-x86_64-baseos'
+      baseurl: 'https://repo.wcooke.me/rpm/rhel-$releasever-x86_64-baseos/'
+      description: 'BaseOS'
+  rocky-appstream:
+    rpm:
+      name: 'local-rocky-x86_64-appstream'
+      baseurl: 'https://repo.wcooke.me/rpm/rocky-$releasever-x86_64-appstream/'
+      description: 'Appstream'
+      gpgkey: 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-$releasever'
+  rocky-baseos:
+    rpm:
+      name: 'local-rocky-x86_64-baseos'
+      baseurl: 'https://repo.wcooke.me/rpm/rocky-$releasever-x86_64-baseos/'
+      description: 'BaseOS'
+      gpgkey: 'file:///etc/pki/rpm-gpg/RPM-GPG-KEY-Rocky-$releasever'

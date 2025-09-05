@@ -1,0 +1,15 @@
+{% if crt_list_info.stat.size %}
+frontend https
+    description Default HTTPS frontend
+    bind :::443 v4v6 ssl alpn h2,http/1.1 crt-list /etc/haproxy/crt-list.conf
+
+{% for f in https_frontend_configuration_contents.results %}
+    # {{ f.https_file.path }}
+    {{ f.content | b64decode }}
+
+{% endfor %}
+
+{% if haproxy_default_backend is defined %}
+    default_backend {{ haproxy_default_backend }}
+{% endif %}
+{%- endif %}

@@ -1,0 +1,37 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/replace_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/general/ini_file_module.html
+
+
+- name: Disabling systemd idle session logout
+  become: true
+  notify: restart_systemd_logind
+  when:
+    - logoff_timeout_minutes is defined
+    - logoff_timeout_minutes is false
+  ansible.builtin.replace:
+    path: /etc/systemd/logind.conf
+    regexp: '^StopIdleSessionSec'
+    replace: '#StopIdleSessionSec'
+
+
+- name: Setting systemd idle session logout
+  become: true
+  notify: restart_systemd_logind
+  when:
+    - logoff_timeout_minutes is defined
+    - logoff_timeout_minutes is regex("^[0-9]+$")
+  community.general.ini_file:
+    group: root
+    mode: "0644"
+    modify_inactive_option: true
+    no_extra_spaces: true
+    option: StopIdleSessionSec
+    owner: root
+    path: /etc/systemd/logind.conf
+    section: Login
+    state: present
+    value: "{{ logoff_timeout_minutes * 60 }}"

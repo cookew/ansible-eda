@@ -1,0 +1,50 @@
+Make sure to set all of the variables in the defaults/main.yml in your own ansible vault.
+
+This is what your inventory might look like. The ceph_ip vars must be set on your ceph_bootstrap_host.
+
+The _admin label needs to be set on your ceph_bootstrap_host.
+
+If you are using labels for the placement of server instances, there must be a label assigned to a host for that command to succeed.
+
+Labels are applied, or removed, before the ceph_commands var is processed.
+
+ceph_hosts:
+  hosts:
+    ceph-1.example.com:
+      ceph_ip: 10.0.0.101
+      ceph_host_labels:
+        - _admin
+        - alertmanager
+        - grafana
+        - loki
+        - mgr
+        - osd
+        - prometheus
+    ceph-2.example.com:
+      ceph_host_labels:
+        - _admin
+        - alertmanager
+        - cephfs-mirror
+        - grafana
+        - loki
+        - mgr
+        - osd
+        - prometheus
+    ceph-3.example.com:
+      ceph_host_labels:
+        - _admin
+        - cephfs-mirror
+        - mds
+        - mgr
+        - nfs
+        - osd
+        - rbd
+        - rgw
+    ceph-4.example.com:
+      ceph_host_labels:
+        - _admin
+        - mds
+        - nfs
+        - osd
+        - rbd
+        - rgw

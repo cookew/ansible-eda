@@ -1,0 +1,9 @@
+- name: Add cert-manager
+  become: false
+  gather_facts: false
+  hosts: localhost
+  roles:
+    - cert_manager
+  vars_files:
+    - config.yml
+    - private_config.yml

@@ -1,0 +1,28 @@
+- name: Retart services
+  become: true
+  listen: haproxy_config
+  loop: "{{ haproxy_distro_info[ansible_facts.distribution].services | default(haproxy_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: restarted
+
+
+- name: Reload keepalived
+  become: true
+  listen: keepalived_config
+  ansible.builtin.systemd_service:
+    name: keepalived.service
+    state: reloaded
+
+
+- name: Reload services
+  become: true
+  listen: haproxy_reload
+  loop: "{{ haproxy_distro_info[ansible_facts.distribution].services | default(haproxy_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: reloaded

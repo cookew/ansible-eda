@@ -1,0 +1,506 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_guest_boot_manager_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_guest_disk_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_guest_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_guest_network_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_guest_powerstate_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_guest_tpm_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_guest_video_module.html
+
+
+# TODO Tags
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_category_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_tag_module.html
+
+
+# TODO Resource Pools
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_resource_pool_module.html
+
+
+# TODO DRS/Affinity/Anti-Affinity Rules
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_vm_host_drs_rule_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_vm_vm_drs_rule_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/vmware/vmware_drs_group_module.html
+
+
+- name: Set vm variable if not exists
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm is not defined
+  ansible.builtin.set_fact:
+    vm: {}
+
+
+- name: Combine vSphere variables
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vsphere_vm is defined
+  ansible.builtin.set_fact:
+    vm: "{{ vsphere_vm | ansible.builtin.combine(vm, list_merge='replace', recursive=true) }}"
+
+
+- name: Build vSphere folder path
+  become: false
+  connection: local
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    vsphere_path: "{{ [vm.parent_folder | default(''), vm.folder | default('')] | select() }}"
+
+
+- name: Create vSphere Virtual Machine
+  become: false
+  connection: local
+  delegate_to: localhost
+  register: instance_new
+  when:
+    - vm.template is not defined
+  community.vmware.vmware_guest:
+    annotation: "Created by ansible-eda on {{ now(utc=true, fmt='%Y-%m-%d %H:%M:%S') }} UTC."
+    cluster: "{{ vsphere.cluster }}"
+    datacenter: "{{ vsphere.datacenter }}"
+    datastore: "{{ vsphere.datastore }}"
+    disk:
+      - controller_number: "{{ vm.disk.controller_number | default(0) }}"
+        controller_type: "{{ vm.disk.controller_type | default('nvme') }}"
+        disk_mode: "{{ vm.disk.disk_mode | default('persistent') }}"
+        size_gb: "{{ vm.disk.size_gb | default('24') }}"
+        type: "{{ vm.disk.type | default('thin') }}"
+        unit_number: "{{ vm.disk.unit_number | default(0) }}"
+    folder: "/{{ vsphere_path | join('/') }}"
+    guest_id: "{{ vm.guest_id }}"
+    hardware:
+      boot_firmware: "{{ vm.hardware.boot_firmware | default('efi') }}"
+      cpu_limit: "{{ vm.hardware.cpu_limit | default(omit) }}"
+      cpu_reservation: "{{ vm.hardware.cpu_reservation | default(omit) }}"
+      cpu_shares: "{{ vm.hardware.cpu_shares | default(omit) }}"
+      cpu_shares_level: "{{ vm.hardware.cpu_shares_level | default(omit) }}"
+      hotadd_cpu: "{{ vm.hardware.hotadd_cpu | default(omit) }}"
+      hotadd_memory: "{{ vm.hardware.hotadd_memory | default(omit) }}"
+      hotremove_cpu: "{{ vm.hardware.hotremove_cpu | default(omit) }}"
+      iommu: "{{ vm.hardware.iommu | default(omit) }}"
+      max_connections: "{{ vm.hardware.max_connections | default(omit) }}"
+      mem_limit: "{{ vm.hardware.mem_limit | default(omit) }}"
+      mem_reservation: "{{ vm.hardware.mem_reservation | default(omit) }}"
+      mem_shares: "{{ vm.hardware.mem_shares | default(omit) }}"
+      mem_shares_level: "{{ vm.hardware.mem_shares_level | default(omit) }}"
+      memory_mb: "{{ vm.hardware.memory_mb | default(4096) }}"
+      memory_reservation_lock: "{{ vm.hardware.memory_reservation_lock | default(omit) }}"
+      nested_virt: "{{ vm.hardware.nested_virt | default(false) }}"
+      num_cpu_cores_per_socket: "{{ vm.hardware.num_cpu_cores_per_socket | default(1) }}"
+      num_cpus: "{{ vm.hardware.num_cpus | default(2) }}"
+      scsi: "{{ vm.hardware.scsi | default('paravirtual') }}"
+      secure_boot: "{{ vm.hardware.secure_boot | default(false) }}"
+      version: "{{ vm.hardware.version | default('latest') }}"
+      virt_based_security: "{{ vm.hardware.virt_based_security | default(false) }}"
+      vpmc_enabled: "{{ vm.hardware.vpmc_enabled | default(false) }}"
+    hostname: "{{ vcenter.hostname }}"
+    name: "{{ vm.name | default(vm.hostname) | default(inventory_hostname_short) }}"
+    networks:
+      - device_type: "{{ vm.networks.device_type | default('vmxnet3') }}"
+        name: "{{ vm.networks.name | default(vsphere.network) }}"
+    password: "{{ vcenter.password }}"
+    resource_pool: "{{ vm.resource_pool | default(omit) }}"
+    state: present
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Clone vSphere Virtual Machine
+  become: false
+  connection: local
+  delegate_to: localhost
+  register: instance_template
+  when:
+    - vm.template is defined
+  community.vmware.vmware_guest:
+    annotation: "Cloned by ansible-eda on {{ now(utc=true, fmt='%Y-%m-%d %H:%M:%S') }} UTC."
+    cluster: "{{ vsphere.cluster }}"
+    datacenter: "{{ vsphere.datacenter }}"
+    datastore: "{{ vsphere.datastore }}"
+    disk:
+      - controller_number: "{{ vm.disk.controller_number | default(0) }}"
+        controller_type: "{{ vm.disk.controller_type | default('nvme') }}"
+        disk_mode: "{{ vm.disk.disk_mode | default('persistent') }}"
+        size_gb: "{{ vm.disk.size_gb | default(24) }}"
+        type: "{{ vm.disk.type | default('thin') }}"
+        unit_number: "{{ vm.disk.unit_number | default(0) }}"
+    folder: "/{{ vsphere_path | join('/') }}"
+    hardware:
+      boot_firmware: "{{ vm.hardware.boot_firmware | default('efi') }}"
+      cpu_limit: "{{ vm.hardware.cpu_limit | default(omit) }}"
+      cpu_reservation: "{{ vm.hardware.cpu_reservation | default(omit) }}"
+      cpu_shares: "{{ vm.hardware.cpu_shares | default(omit) }}"
+      cpu_shares_level: "{{ vm.hardware.cpu_shares_level | default(omit) }}"
+      hotadd_cpu: "{{ vm.hardware.hotadd_cpu | default(omit) }}"
+      hotadd_memory: "{{ vm.hardware.hotadd_memory | default(omit) }}"
+      hotremove_cpu: "{{ vm.hardware.hotremove_cpu | default(omit) }}"
+      iommu: "{{ vm.hardware.iommu | default(omit) }}"
+      max_connections: "{{ vm.hardware.max_connections | default(omit) }}"
+      mem_limit: "{{ vm.hardware.mem_limit | default(omit) }}"
+      mem_reservation: "{{ vm.hardware.mem_reservation | default(omit) }}"
+      mem_shares: "{{ vm.hardware.mem_shares | default(omit) }}"
+      mem_shares_level: "{{ vm.hardware.mem_shares_level | default(omit) }}"
+      memory_mb: "{{ vm.hardware.memory_mb | default(4096) }}"
+      memory_reservation_lock: "{{ vm.hardware.memory_reservation_lock | default(omit) }}"
+      nested_virt: "{{ vm.hardware.nested_virt | default(false) }}"
+      num_cpu_cores_per_socket: "{{ vm.hardware.num_cpu_cores_per_socket | default(1) }}"
+      num_cpus: "{{ vm.hardware.num_cpus | default(2) }}"
+      scsi: "{{ vm.hardware.scsi | default('paravirtual') }}"
+      secure_boot: "{{ vm.hardware.secure_boot | default(false) }}"
+      version: "{{ vm.hardware.version | default('latest') }}"
+      virt_based_security: "{{ vm.hardware.virt_based_security | default(false) }}"
+      vpmc_enabled: "{{ vm.hardware.vpmc_enabled | default(false) }}"
+    hostname: "{{ vcenter.hostname }}"
+    linked_clone: "{{ vm.linked_clone | default(omit) }}"
+    name: "{{ vm.name | default(vm.hostname) | default(inventory_hostname_short) }}"
+    # networks:
+    #   - device_type: "{{ vm.networks.device_type | default('vmxnet3') }}"
+    #     name: "{{ vm.networks.name | default(vsphere.network) }}""
+    password: "{{ vcenter.password }}"
+    resource_pool: "{{ vm.resource_pool | default(omit) }}"
+    snapshot_src: "{{ vm.snapshot_src | default(omit) }}"
+    state: present
+    template: "{{ vm.template | default(omit) }}"
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Combine instance variables
+  become: false
+  connection: local
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    instance: "{{ instance_new | ansible.builtin.combine(instance_template, list_merge='replace', recursive=true) }}"
+
+
+- name: Set boot retry delay
+  become: false
+  connection: local
+  delegate_to: localhost
+  community.vmware.vmware_guest_boot_manager:
+    boot_retry_delay: 10000
+    boot_retry_enabled: true
+    hostname: "{{ vcenter.hostname }}"
+    moid: "{{ instance.instance.moid | default(instance.instance.moid) }}"
+    password: "{{ vcenter.password }}"
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Add Disks
+  become: false
+  connection: local
+  delegate_to: localhost
+  loop:
+    "{{ vm.extra_disks }}"
+  when:
+    - vm.extra_disks is defined
+  community.vmware.vmware_guest_disk:
+    datacenter: "{{ vsphere.datacenter }}"
+    disk:
+      - controller_number: "{{ item.controller_number | default(0) }}"
+        controller_type: "{{ item.controller_type | default('nvme') }}"
+        disk_mode: "{{ item.disk_mode | default('persistent') }}"
+        size_gb: "{{ item.size_gb }}"
+        type: "{{ item.type | default('thin') }}"
+        unit_number: "{{ item.unit_number | default(1) }}"
+    hostname: "{{ vcenter.hostname }}"
+    moid: "{{ instance.instance.moid }}"
+    password: "{{ vcenter.password }}"
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Change disk size
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm.template is defined
+    - vm.snapshot is not defined
+    - vm.linked_clone is not defined
+  community.vmware.vmware_guest_disk:
+    datacenter: "{{ vsphere.datacenter }}"
+    disk:
+      - controller_number: "{{ vm.disk.controller_number | default(0) }}"
+        controller_type: "{{ vm.disk.controller_type | default('nvme') }}"
+        disk_mode: "{{ vm.disk.disk_mode | default('persistent') }}"
+        size_gb: "{{ vm.disk.size_gb | default(24) }}"
+        type: "{{ vm.disk.type | default('thin') }}"
+        unit_number: "{{ vm.disk.unit_number | default(0) }}"
+    hostname: "{{ vcenter.hostname }}"
+    moid: "{{ instance.instance.moid }}"
+    password: "{{ vcenter.password }}"
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Add Networks
+  become: false
+  connection: local
+  delegate_to: localhost
+  loop:
+    "{{ vm.extra_networks }}"
+  when:
+    - vm.extra_networks is defined
+  community.vmware.vmware_guest_network:
+    datacenter: "{{ vsphere.datacenter }}"
+    force: true
+    hostname: "{{ vcenter.hostname }}"
+    moid: "{{ instance.instance.moid }}"
+    network_name: "{{ item.network_name }}"
+    password: "{{ vcenter.password }}"
+    state: present
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Chnage network adapter network
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm.template is defined
+  community.vmware.vmware_guest_network:
+    datacenter: "{{ vsphere.datacenter }}"
+    force: true
+    hostname: "{{ vcenter.hostname }}"
+    label: Network adapter 1
+    moid: "{{ instance.instance.moid }}"
+    network_name: "{{ vm.networks.name | default(vsphere.network) }}"
+    password: "{{ vcenter.password }}"
+    state: present
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Add TPM
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm.tpm is defined
+    - vm.tpm
+  community.vmware.vmware_guest_tpm:
+    datacenter: "{{ vsphere.datacenter }}"
+    hostname: "{{ vcenter.hostname }}"
+    moid: "{{ instance.instance.moid }}"
+    password: "{{ vcenter.password }}"
+    state: present
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Modify Video Memory
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm.video is defined
+    - vm.video.video_memory_mb is defined
+  community.vmware.vmware_guest_video:
+    datacenter: "{{ vsphere.datacenter }}"
+    gather_video_facts: false
+    hostname: "{{ vcenter.hostname }}"
+    moid: "{{ instance.instance.moid }}"
+    password: "{{ vcenter.password }}"
+    use_auto_detect: false
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+    video_memory_mb: "{{ vm.video.video_memory_mb }}"
+
+
+- name: Enable 3D Video
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm.video is defined
+    - vm.video.enable_3D is defined
+  community.vmware.vmware_guest_video:
+    datacenter: "{{ vsphere.datacenter }}"
+    enable_3D: "{{ vm.video.enable_3D }}"
+    gather_video_facts: false
+    hostname: "{{ vcenter.hostname }}"
+    moid: "{{ instance.instance.moid }}"
+    password: "{{ vcenter.password }}"
+    use_auto_detect: false
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Modify 3D Video Memory
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm.video is defined
+    - vm.video.memory_3dD_mb is defined
+  community.vmware.vmware_guest_video:
+    datacenter: "{{ vsphere.datacenter }}"
+    gather_video_facts: false
+    hostname: "{{ vcenter.hostname }}"
+    memory_3D_mb: "{{ vm.video.memory_3D_mb }}"
+    moid: "{{ instance.instance.moid }}"
+    password: "{{ vcenter.password }}"
+    use_auto_detect: false
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Create iPXE file
+  become: true
+  connection: smart
+  delegate_to: "{{ ipxe_delegate_to | default('localhost') }}"
+  when:
+    - power_state is not defined or
+      (power_state is defined and power_state == 'powered-on')
+    - ipxe_auto_path is defined
+    - ipxe_profile_path is defined
+    - ipxe_profile is defined
+    - vm.template is not defined
+  ansible.builtin.copy:
+    dest: "{{ ipxe_auto_path }}/mac-{{ instance.instance.hw_eth0.macaddress | replace(':', '') }}.ipxe"
+    group: root
+    mode: "0644"
+    owner: root
+    remote_src: true
+    src: "{{ ipxe_profile_path }}/{{ ipxe_profile }}"
+
+
+- name: Update iPXE profile
+  become: true
+  connection: smart
+  delegate_to: "{{ ipxe_delegate_to | default('localhost') }}"
+  loop:
+    - regexp: HOSTNAME
+      replace: '{{ inventory_hostname_short }}'
+    - regexp: DOMAINNAME
+      replace: "{{ inventory_hostname | regex_replace('^.+?\\.', '') }}"
+    - regexp: IPV4
+      replace: "{{ lookup('community.general.dig', inventory_hostname + '/A') }}"
+    - regexp: IPV6
+      replace: "{{ lookup('community.general.dig', inventory_hostname + '/AAAA') }}"
+    - regexp: NAMESERVERv4
+      replace: "{{ dns_server }}"
+    - regexp: IPv4GATEWAY
+      replace: "{{ ipv4_gateway | default(omit) }}"
+    - regexp: IPv6GATEWAY
+      replace: "{{ ipv6_gateway | default(omit) }}"
+  when:
+    - power_state is not defined or
+      (power_state is defined and power_state == "powered-on")
+    - ipxe_auto_path is defined
+    - ipxe_profile is defined
+    - vm.template is not defined
+  ansible.builtin.replace:
+    path: "{{ ipxe_auto_path }}/mac-{{ instance.instance.hw_eth0.macaddress | replace(':', '') }}.ipxe"
+    regexp: "{{ item.regexp }}"
+    replace: "{{ item.replace }}"
+
+
+- name: Set cloud-init data
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm.cloud_init_template is defined
+  community.vmware.vmware_guest:
+    advanced_settings:
+      - key: guestinfo.metadata
+        value: "{{ lookup('template', vm.cloud_init_template + '-metadata.j2') | b64encode }}"
+      - key: guestinfo.metadata.encoding
+        value: base64
+      - key: guestinfo.userdata
+        value: "{{ lookup('template', vm.cloud_init_template + '-userdata.j2') | b64encode }}"
+      - key: guestinfo.userdata.encoding
+        value: base64
+    cluster: "{{ vsphere.cluster }}"
+    datacenter: "{{ vsphere.datacenter }}"
+    folder: "/{{ vsphere_path | join('/') }}"
+    hostname: "{{ vcenter.hostname }}"
+    name: "{{ vm.name | default(vm.hostname) | default(inventory_hostname_short) }}"
+    password: "{{ vcenter.password }}"
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Start extra networks disconnected
+  become: false
+  connection: local
+  delegate_to: localhost
+  loop:
+    "{{ vm.extra_networks }}"
+  when:
+    - power_state is not defined or
+      (power_state is defined and power_state == "powered-on")
+    - profile.ipxe.template is defined
+    - vm.extra_networks is defined
+  community.vmware.vmware_guest_network:
+    datacenter: "{{ vsphere.datacenter }}"
+    hostname: "{{ vcenter.hostname }}"
+    label: "{{ item.label }}"
+    moid: "{{ instance.instance.moid }}"
+    password: "{{ vcenter.password }}"
+    start_connected: false
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Change virtual machine power state
+  become: false
+  connection: local
+  delegate_to: localhost
+  throttle: 2
+  when:
+    - power_state is not defined or
+      (power_state is defined and power_state == "powered-on")
+  community.vmware.vmware_guest_powerstate:
+    datacenter: "{{ vsphere.datacenter }}"
+    hostname: "{{ vcenter.hostname }}"
+    moid: "{{ instance.instance.moid }}"
+    password: "{{ vcenter.password }}"
+    state: "{{ vm.power_state | default('powered-on') }}"
+    username: "{{ vcenter.username }}"
+    validate_certs: true
+
+
+- name: Wait for VM to be installed
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - power_state is not defined or
+      (power_state is defined and power_state == "powered-on")
+    - vm.extra_networks is defined
+  ansible.builtin.pause:
+    seconds: 30
+
+
+- name: Start extra networks connected and enable them now
+  become: false
+  connection: local
+  delegate_to: localhost
+  loop:
+    "{{ vm.extra_networks }}"
+  when:
+    - power_state is not defined or
+      (power_state is defined and power_state == "powered-on")
+    - vm.extra_networks is defined
+  community.vmware.vmware_guest_network:
+    connected: true
+    datacenter: "{{ vsphere.datacenter }}"
+    moid: "{{ instance.instance.moid }}"
+    hostname: "{{ vcenter.hostname }}"
+    label: "{{ item.label }}"
+    password: "{{ vcenter.password }}"
+    start_connected: true
+    username: "{{ vcenter.username }}"
+    validate_certs: true

@@ -1,0 +1,36 @@
+- name: Remount /boot/firmware as read-write
+  become: true
+  changed_when: false
+  ansible.builtin.command:
+    cmd: mount -o remount,rw /boot/firmware
+
+
+- name: Change config.txt boot options
+  become: true
+  loop:
+    - { option: dtoverlay, value: disable-wifi, exclusive: false }
+    - { option: dtparam, value: audio=off, exclusive: false }
+    - { option: dtparam, value: i2c_arm=off, exclusive: false }
+    - { option: dtparam, value: spi=off, exclusive: false }
+    - { option: dtparam, value: audio=on, exclusive: false, state: absent }
+    - { option: dtparam, value: i2c_arm=on, exclusive: false, state: absent }
+    - { option: dtparam, value: spi=on, exclusive: false, state: absent }
+    - { option: enable_uart, value: 0 }
+    - { option: camera_auto_detect, value: 0 }
+  loop_control:
+    label: "{{ ini_setting.option }}={{ ini_setting.value }}"
+    loop_var: ini_setting
+  notify: raspi_config
+  community.general.ini_file:
+    exclusive: "{{ ini_setting.exclusive | default(true) }}"
+    mode: "0755"
+    no_extra_spaces: true
+    option: "{{ ini_setting.option }}"
+    path: /boot/firmware/config.txt
+    section: all
+    state: "{{ ini_setting.state | default('present') }}"
+    value: "{{ ini_setting.value }}"
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

@@ -1,0 +1,156 @@
+# - name: Add DNS entries
+#   become: false
+#   gather_facts: false
+#   hosts: localhost
+#   roles:
+#     - dns
+#   vars_files:
+#     - config.yml
+#     - private_config.yml
+#   vars:
+#     dns_records:
+#       - record: "*.apps.{{ domain_name }}."
+#         type: CNAME
+#         value: "services-4.{{ domain_name }}."
+#       - record: "{{ kubernetes_api_endpoint }}."
+#         type: CNAME
+#         value: "services-4.{{ domain_name }}."
+
+
+# - name: Setup host roles
+#   become: true
+#   gather_facts: true
+#   hosts: kubernetes
+#   roles:
+#     - dns
+#     - raspi_server
+#   vars_files:
+#     - config.yml
+#     - private_config.yml
+
+
+- name: Configure the proxies
+  any_errors_fatal: true
+  become: true
+  gather_facts: true
+  hosts: svc-[1-2].wcooke.me
+  vars_files:
+    - config.yml
+    - private_config.yml
+  tasks:
+
+
+    - name: Setup haproxy
+      ansible.builtin.include_role:
+        name: kubernetes_overrides
+        tasks_from: proxy.yml
+
+
+    - name: Setup keepalived
+      vars:
+        vip:
+          name: kubernetes_control
+          id: 50
+          ip: "{{ kubernetes_control_plane_ip }}"
+      ansible.builtin.include_role:
+        name: keepalived
+        tasks_from: create_vip.yml
+
+
+- name: Install containerd.io
+  any_errors_fatal: true
+  become: true
+  gather_facts: true
+  hosts: kubernetes
+  roles:
+    - kubernetes-defaults
+    - containerd
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+- name: Install kubernetes pre-requisites
+  any_errors_fatal: true
+  become: true
+  hosts:
+    - kubernetes
+  roles:
+    - kubernetes-defaults
+    - kubernetes
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+- name: Install Control Planes
+  any_errors_fatal: true
+  become: true
+  gather_facts: true
+  hosts: control_planes
+  serial: 1
+  roles:
+    - kubernetes-defaults
+    - kubernetes-control-plane
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+- name: Post control plane hooks
+  any_errors_fatal: true
+  become: true
+  gather_facts: true
+  hosts: control_planes
+  roles:
+    - kubernetes-defaults
+    - post-kubernetes-control-plane
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+- name: Install worker nodes
+  any_errors_fatal: true
+  become: true
+  gather_facts: true
+  hosts: worker_nodes
+  roles:
+    - kubernetes-defaults
+    - kubernetes-worker
+    - post-kubernetes-worker
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+- name: Copy kube admin file
+  hosts: control_planes
+  run_once: true
+  become: true
+  tasks:
+
+
+    - name: Copy file
+      become: true
+      register: kubernetes_admin_conf
+      ansible.builtin.slurp:
+        src: /etc/kubernetes/admin.conf
+
+
+    - name: Make ~/.kube directory
+      become: false
+      delegate_to: localhost
+      ansible.builtin.file:
+        dest: ~/.kube
+        mode: "0700"
+        state: directory
+
+
+    - name: Save config on localhost
+      become: false
+      delegate_to: localhost
+      ansible.builtin.copy:
+        content: "{{ kubernetes_admin_conf.content | b64decode }}"
+        dest: ~/.kube/config
+        mode: "0600"

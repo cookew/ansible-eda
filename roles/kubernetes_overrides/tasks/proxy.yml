@@ -1,0 +1,31 @@
+- name: Copy proxy configs
+  become: true
+  loop:
+    - 50-kubernetes_control.cfg
+    - 50-kubernetes_ingress.cfg
+  loop_control:
+    loop_var: file
+  notify: haproxy_reload
+  ansible.builtin.template:
+    dest: "/etc/haproxy/conf.d/{{ file }}"
+    group: root
+    mode: "0644"
+    owner: root
+    src: "{{ file }}.j2"
+
+
+- name: Add proxy backend config
+  become: true
+  vars:
+    proxy:
+      - name: kubernetes-ingress
+        alpn: alpn h2,http/1.1
+        cert: "{{ kubernetes_ingress_cert }}"
+        https_frontend_config: "use_backend kubernetes-ingress if { hdr_end(host) -i .apps.{{ domain_name }} }"
+  ansible.builtin.import_role:
+    name: haproxy
+    tasks_from: add_proxy.yml
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

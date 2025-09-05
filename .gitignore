@@ -1,0 +1,5 @@
+.cache
+id_rsa*
+vars/private_config.yml
+hosts/*
+__pycache__

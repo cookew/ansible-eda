@@ -1,0 +1,59 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/package_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_service_module.html
+
+
+- name: Install packages
+  become: true
+  when:
+    - not autofs_install is defined or
+      (autofs_install is defined and autofs_install)
+  ansible.builtin.package:
+    name: "{{ autofs_distro_info[ansible_facts.distribution].packages | default(autofs_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enable services
+  become: true
+  loop: "{{ autofs_distro_info[ansible_facts.distribution].services | default(autofs_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  when:
+    - not autofs_install is defined or
+      (autofs_install is defined and autofs_install)
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service }}"
+
+
+- name: Start services
+  become: true
+  loop: "{{ autofs_distro_info[ansible_facts.distribution].services | default(autofs_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  when:
+    - not autofs_install is defined or
+      (autofs_install is defined and autofs_install)
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: started
+
+
+- name: Configure auto.master
+  become: true
+  notify: autofs_restart
+  when:
+    - not autofs_install is defined or
+      (autofs_install is defined and autofs_install)
+  ansible.builtin.lineinfile:
+    path: "{{ autofs_distro_info[ansible_facts.distribution].auto_master_path | default(autofs_family_info[ansible_facts.os_family].auto_master_path) }}"
+    line: /net -hosts
+    regexp: "^\/net\\s+\\S*"
+    insertbefore: \+auto.master
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

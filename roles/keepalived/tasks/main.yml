@@ -1,0 +1,48 @@
+---
+
+
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ keepalived_distro_info[ansible_facts.distribution].packages | default(keepalived_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enable services
+  become: true
+  loop: "{{ keepalived_distro_info[ansible_facts.distribution].services | default(keepalived_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service }}"
+
+
+- name: Copy configuration files
+  become: true
+  loop:
+    - keepalived.conf
+  loop_control:
+    loop_var: file
+  notify: keepalived_config
+  ansible.builtin.template:
+    dest: /etc/keepalived/{{ file }}
+    group: root
+    mode: "0644"
+    owner: root
+    src: "{{ file }}.j2"
+
+
+- name: Create configuration .d directory
+  become: true
+  notify: keepalived_config
+  ansible.builtin.file:
+    dest: /etc/keepalived/conf.d
+    group: root
+    mode: "0755"
+    owner: root
+    state: directory
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

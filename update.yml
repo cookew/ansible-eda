@@ -1,0 +1,50 @@
+- name: Update packages
+  become: true
+  gather_facts: true
+#  hosts: "{{ ansible_eda.event.payload.host }}"
+  hosts:
+    - svc-[1-2].wcooke.me
+    - ceph-[1-4].wcooke.me
+    - kube-control-[1-3].wcooke.me
+    - kube-worker-[1-4].wcooke.me
+  vars_files:
+    - config.yml
+    - private_config.yml
+  tasks:
+
+
+    - name: Get mounted devices
+      register: mount_facts
+      ansible.builtin.mount_facts:
+        include_aggregate_mounts: false
+
+
+    - name: Remount /boot/firmware as read-write
+      when:
+        - "'rw' not in mount_facts.ansible_facts.mount_points['/boot/firmware'].options"
+      ansible.posix.mount:
+        opts: rw
+        path: /boot/firmware/
+        state: remounted
+
+
+    - name: Update
+      register: updates
+      ansible.builtin.apt:
+        cache_valid_time: 86400
+        purge: true
+        update_cache: true
+        upgrade: dist
+
+
+    - name: Autoclean and autoremove
+      register: updates
+      ansible.builtin.apt:
+        autoclean: true
+        autoremove: true
+
+
+    - name: Purge
+      register: updates
+      ansible.builtin.apt:
+        purge: true

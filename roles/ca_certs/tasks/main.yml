@@ -1,0 +1,31 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+
+
+- name: Add CA Certs
+  become: true
+  loop: "{{ ca_certs }}"
+  loop_control:
+    label: "{{ ca_cert.name }}"
+    loop_var: ca_cert
+  notify:
+    - update-ca-certs
+  when:
+    - ca_certs is defined
+  ansible.builtin.copy:
+    content: "{{ ca_cert.cert }}"
+    # yamllint disable-line rule:line-length
+    dest: "{{ ca_certs_distro_info[ansible_facts.distribution].ca_cert_directory | default(ca_certs_family_info[ansible_facts.os_family].ca_cert_directory) }}/{{ ca_cert.name }}.{{ ca_certs_distro_info[ansible_facts.distribution].ca_cert_file_extension | default(ca_certs_family_info[ansible_facts.os_family].ca_cert_file_extension) }}"
+    # yamllint disable-line rule:line-length
+    group: "{{ ca_certs_distro_info[ansible_facts.distribution].ca_cert_file_group | default(ca_certs_family_info[ansible_facts.os_family].ca_cert_file_group) }}"
+    # yamllint disable-line rule:line-length
+    mode: "{{ ca_certs_distro_info[ansible_facts.distribution].ca_cert_file_mode | default(ca_certs_family_info[ansible_facts.os_family].ca_cert_file_mode) }}"
+    # yamllint disable-line rule:line-length
+    owner: "{{ ca_certs_distro_info[ansible_facts.distribution].ca_cert_file_owner | default(ca_certs_family_info[ansible_facts.os_family].ca_cert_file_owner) }}"
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

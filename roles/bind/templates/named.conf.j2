@@ -1,0 +1,177 @@
+{% if bind_acls is defined %}{% for acl in bind_acls %}acl "{{ acl.name }}" { {%- for entry in acl.entries %} {{ entry }};{% endfor %} };
+{% endfor %}{% endif %}
+include "/etc/bind/rndc.key";
+key "ansible" { algorithm {{ bind_keys.ansible.algorithm }}; secret "{{ bind_keys.ansible.secret }}"; };
+key "catalog" { algorithm {{ bind_keys.catalog.algorithm }}; secret "{{ bind_keys.catalog.secret }}"; };
+key "dhcp_dynamic_dns" { algorithm {{ bind_keys.dhcp_dynamic_dns.algorithm }}; secret "{{ bind_keys.dhcp_dynamic_dns.secret }}"; };
+key "tofu.wcooke.me." { algorithm {{ bind_keys["tofu.wcooke.me."].algorithm }}; secret "{{ bind_keys["tofu.wcooke.me."].secret }}"; };
+{% if bind_keys.custom is defined %}{% for key in bind_keys %}key "{{ key.name }}" { algorithm {{ key.algorithm }}; secret "{{ key.secret }}"; };{% endfor %}
+
+{% endif %}
+{% if bind_controls is defined %}
+controls {
+    inet 127.0.0.1 port 953 allow { "localhost"; } keys { "rndc-key"; };
+    inet ::1 port 953 allow { "localhost"; } keys { "rndc-key"; };
+    inet * port 953 allow { "trusted"; } keys { "ansible"; "catalog"; "dhcp_dynamic_dns"; };
+    inet :: port 953 allow { "trusted"; } keys { "ansible"; "catalog"; "dhcp_dynamic_dns"; };
+{% for control in bind_controls %}    inet {{ control.source_ip}} port {{ control.port }} allow { {%- for acl in control.acls %} "{{ acl }}";{% endfor %} } keys { {%- for c_key in control.keys_list %} "{{ c_key }}";{% endfor %} };
+{% endfor %}
+
+};
+{% endif %}
+options {
+    directory "/var/lib/bind";
+    {% if bind_is_primary_server is defined and bind_is_primary_server %}allow-new-zones yes;{% endif %}
+
+    {% if bind_options_allow_query_acls is defined %}allow-query { {%- for allow_query_acl in bind_options_allow_query_acls %} "{{ allow_query_acl }}";{% endfor %} };{% endif %}
+
+    {% if bind_options_allow_recursion_acls is defined %}allow-recursion { {%- for allow_recursion_acl in bind_options_allow_recursion_acls %} "{{ allow_recursion_acl }}";{% endfor %} };{% endif %}
+
+    {% if bind_options_allow_transfer_acls is defined %}allow-transfer { {%- for allow_transfer_acl in bind_options_allow_transfer_acls %} {{ allow_transfer_acl }};{% endfor %} };{% endif %}
+
+    {% if bind_options_automatic_interface_scan is defined %}automatic-interface-scan {{ bind_options_automatic_interface_scan }};{% endif %}
+
+    {% if bind_is_primary_server is defined and bind_is_primary_server and bind_secondary_servers is defined %}also-notify { {%- for secondary in bind_secondary_servers %} {{ secondary.ipv4 | default(secondary.ipv6) }};{% endfor %} };{% endif %}
+
+    {% if bind_options_auth_nxdomain is defined %}auth-nxdomain {{ bind_options_auth_nxdomain }};{% endif %}
+
+    {% if bind_options_dnssec_validation is defined %}dnssec-validation {{ bind_options_dnssec_validation }};{% endif %}
+
+    {% if bind_options_empty_contact is defined %}empty-contact "{{ bind_options_empty_contact }}";{% endif %}
+
+    empty-server "{{ bind_primary_server_hostname }}";
+
+    {% if bind_options_empty_zones_enable is defined %}empty-zones-enable {{ bind_options_empty_zones_enable }};{% endif %}
+
+    {% if bind_options_forward is defined %}forward {{ bind_options_forward }};{% endif %}
+
+    {% if bind_options_forwarders is defined %}forwarders { {%- for forwarder in bind_options_forwarders %} {{ forwarder }};{% endfor %} };{% endif %}
+
+    {% if bind_options_interface_interval is defined %}interface-interval {{ bind_options_interface_interval }};{% endif %}
+
+    {% if bind_options_listen_on is defined %}listen-on { {%- for listen in bind_options_listen_on %} {{ listen }};{% endfor %} };{% endif %}
+
+    {% if bind_options_listen_on_v6 is defined %}listen-on-v6 { {%- for listen in bind_options_listen_on_v6 %} {{ listen }};{% endfor %} };{% endif %}
+
+    {% if bind_options_max_cache_size is defined %}max-cache-size {{ bind_options_max_cache_size }};{% endif %}
+
+    {% if bind_is_primary_server is defined and bind_is_primary_server and bind_secondary_servers is defined %}notify explicit;{% endif %}
+
+    {% if bind_options_recursion is defined %}recursion {{ bind_options_recursion }};{% endif %}
+
+    {% if bind_options_validate_except_list is defined %}validate-except { {%- for validate_except in bind_options_validate_except_list %} "{{ validate_except }}";{% endfor %} };{% endif %}
+
+    hostname none;
+    server-id none;
+    version none;
+{#{% if (bind_is_primary_server is defined and bind_is_primary_server is false) or not bind_is_primary_server is defined %}
+    catalog-zones {
+        zone "catalog.catalog"
+            default-primaries { {{ bind_primary_server_ipv4 | default(bind_primary_server_ipv6) }}; }
+            in-memory no
+            min-update-interval 5
+            zone-directory "catalog_zones";
+    };{% endif %}#}
+
+};
+{% if bind_logging_catagories is defined %}
+logging {
+{% for logging in bind_logging_catagories %}    category {{ logging.category}} { {{ logging.output}}; };
+{% endfor %}
+
+};
+{% endif %}
+zone "." {
+        file "root.hints";
+        type hint;
+};
+zone "localhost" {
+        file "localhost";
+        type primary;
+};
+zone "127.in-addr.arpa" {
+        file "127.in-addr.arpa";
+        type primary;
+};
+zone "0.in-addr.arpa" {
+        file "0.in-addr.arpa";
+        type primary;
+};
+zone "255.in-addr.arpa" {
+        file "255.in-addr.arpa";
+        type primary;
+};
+{#{% if bind_is_primary_server is defined and bind_is_primary_server %}
+zone "catalog.catalog" in {
+    allow-transfer { "xfer"; };
+    file "catalog.catalog";
+    forwarders { };
+    type primary;
+    update-policy { grant "ansible" zonesub ANY; };
+};
+{% else %}
+zone "catalog.catalog" in {
+    allow-transfer { none; };
+    file "zones/catalog.catalog";
+    primaries { {{ bind_primary_server_ipv4 | default(bind_primary_server_ipv6) }}; };
+    type secondary;
+};
+{% endif %}#}
+// start bind_zones
+{% if bind_zones is defined %}
+{% for zone in bind_zones %}
+{% if bind_is_primary_server is defined and bind_is_primary_server %}
+{% if zone.type == "primary" %}
+zone "{{ zone.zone }}" in {
+    file "zones/{{ zone.zone }}";
+    type primary;
+{% if zone.allow_transfer_acls is defined %}    allow-transfer { {%- for allow_transfer_acl in zone.allow_transfer_acls %} "{{ allow_transfer_acl }}";{% endfor %} };{% endif %}
+
+{% if zone.forwarders is defined %}    forwarders { {%- for forwarder in zone.forwarders %} {{ forwarder }};{% endfor %} };{% endif %}
+
+    update-policy { grant ansible zonesub ANY; {% if zone.update_policies %}{%- for update_policy in zone.update_policies %} {{ update_policy }};{% endfor %}{% endif %} };
+};
+// end if zone.type == primary
+{% endif %}
+// end if bind_is_primary_server is defined and bind_is_primary_server
+{% endif %}
+{% if (bind_is_primary_server is defined and bind_is_primary_server is false) or not bind_is_primary_server is defined %}
+{% if zone.type == "primary" %}
+zone "{{ zone.zone }}" in {
+    file "zones/{{ zone.zone }}";
+    type secondary;
+{% if zone.allow_transfer_acls is defined %}    allow-transfer { {%- for allow_transfer_acl in zone.allow_transfer_acls %} "{{ allow_transfer_acl }}";{% endfor %} };{% endif %}
+
+{% if zone.forwarders is defined %}    forwarders { {%- for forwarder in zone.forwarders %} {{ forwarder }};{% endfor %} };{% endif %}
+
+    primaries { {{ bind_primary_server_ipv4}}; };
+};
+// end if zone.type == primary
+{% endif %}
+// end if (bind_is_primary_server is defined and bind_is_primary_server is false) or not bind_is_primary_server is defined
+{% endif %}
+{% if zone.type == "forward" %}
+zone "{{ zone.zone }}" in {
+    type forward;
+{% if zone.forward is defined %}    forward {{ zone.forward }};{% endif %}
+
+    forwarders { {%- for forwarder in zone.forwarders %} {{ forwarder }};{% endfor %} };
+};
+// end if zone.type == "forward"
+{% endif %}
+{% endfor %}
+// end for zone in bind_zones
+{% endif %}
+// end if bind_zones is defined
+{% if bind_blackhole_lists is defined %}
+{% for blackhole_list in bind_blackhole_lists %}
+{% if blackhole_list.enabled %}
+// {{ blackhole_list.name }}
+{% for zone in blackhole_list.zones %}
+zone "{{ zone }}" { file "blackhole"; notify no; type primary; };
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}
+
+// vim: set filetype=named ts=4 :

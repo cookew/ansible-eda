@@ -1,0 +1,24 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+
+
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ vim_distro_info[ansible_facts.distribution].packages | default(vim_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Adding vimrc options
+  become: true
+  when:
+    - vimrc is defined
+  ansible.builtin.copy:
+    content: "{{ vimrc }}"
+    dest: "{{ vim_distro_info[ansible_facts.distribution].vimrc_local_path | default(vim_family_info[ansible_facts.os_family].vimrc_local_path) }}"
+    owner: root
+    group: root
+    mode: "0644"

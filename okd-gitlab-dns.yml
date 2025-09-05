@@ -1,0 +1,19 @@
+- name: Setup OKD Gitlab DNS
+  become: false
+  gather_facts: false
+  hosts: svc-1.wcooke.me
+  roles:
+    - dns
+  vars:
+    dns_records:
+      - record: "gitlab.apps.iaas.{{ domain_name }}."
+        add_ptr: true
+        type: A
+        value: 10.42.41.100
+      - record: "*.gitlab.apps.iaas.{{ domain_name }}."
+        add_ptr: false
+        type: A
+        value: 10.42.41.100
+  vars_files:
+    - config.yml
+    - private_config.yml

@@ -1,0 +1,50 @@
+- name: Install packages
+  become: true
+  when:
+    - ansible_facts.virtualization_type == "VMware"
+  ansible.builtin.package:
+    name: "{{ open_vm_tools_distro_info[ansible_facts.distribution].packages | default(open_vm_tools_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enable services
+  become: true
+  loop: "{{ open_vm_tools_distro_info[ansible_facts.distribution].services | default(open_vm_tools_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  when:
+    - ansible_facts.virtualization_type == "VMware"
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service }}"
+
+
+- name: Start services
+  become: true
+  loop: "{{ open_vm_tools_distro_info[ansible_facts.distribution].services | default(open_vm_tools_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  when:
+    - ansible_facts.virtualization_type == "VMware"
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: started
+
+
+- name: Exluding interfaces from vm tools reporting
+  become: true
+  notify: open_vm_tools_config
+  register: open_vm_tools_config
+  when:
+    - ansible_facts.virtualization_type == "VMware"
+  community.general.ini_file:
+    group: root
+    mode: "0644"
+    modify_inactive_option: false
+    no_extra_spaces: true
+    option: exclude-nics
+    owner: root
+    path: /etc/vmware-tools/tools.conf
+    section: guestinfo
+    state: present
+    value: "antrea-*,cali*,cilium*,lxc*,ovs-system,flannel*,veth*,docker*,virbr*,vxlan_sys_*,genev_sys_*,gre_sys_*,stt_sys_*,????????-??????"

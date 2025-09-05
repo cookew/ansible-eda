@@ -1,0 +1,9 @@
+- name: Setup services Pi
+  become: true
+  gather_facts: true
+  hosts: svc-[1-2].wcooke.me
+  roles:
+  - container_registry_mirror
+  vars_files:
+  - config.yml
+  - private_config.yml

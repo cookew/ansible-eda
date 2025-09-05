@@ -1,0 +1,16 @@
+---
+
+
+- name: Create vip configuration file
+  become: true
+  notify: keepalived_config
+  ansible.builtin.template:
+    dest: /etc/keepalived/conf.d/{{ vip.name }}.conf
+    group: root
+    mode: "0644"
+    owner: root
+    src: vip.conf.j2
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

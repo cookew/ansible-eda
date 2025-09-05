@@ -1,0 +1,115 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_repository_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/find_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/replace_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/yum_repository_module.html
+
+
+- name: Add APT Repos
+  become: true
+  when:
+    - ansible_facts.os_family == "Debian"
+    - vars[ansible_facts.distribution + "_" + ansible_facts.distribution_major_version + "_repos"] is defined
+  block:
+
+
+    # TODO Remove all other repos from /etc/sources and /etc/sources.d/
+
+
+    - name: Adding Repo
+      notify:
+        - refresh-repos-debian
+      with_items:
+        - "{{ vars[ansible_facts.distribution + '_repos'] }}"
+      ansible.builtin.apt_repository:
+        repo: "{{ item.repo }}"
+        state: present
+        validate_certs: "{{ item.validate_certs | default(true) }}"
+
+
+- name: Add RPM Repos
+  become: true
+  when:
+    - ansible_facts.os_family == "RedHat"
+    - vars[ansible_facts.distribution + "_" + ansible_facts.distribution_major_version + "_repos"] is defined
+  block:
+
+
+    - name: Getting list of existing repo files
+      register: existing_repo_files
+      ansible.builtin.find:
+        paths: /etc/yum.repos.d/
+        patterns:
+#          - CentOS*.repo
+#          - Fedora*.repo
+          - redhat*.repo
+          - rocky*.repo
+
+
+    - name: Commenting out all distribution repo files
+      notify:
+        - refresh-repos-redhat
+      when:
+        - ansible_facts.distribution == "Rocky" or
+          ansible_facts.distribution == "RedHat"
+        - existing_repo_files.matched > 0
+      with_items:
+        - "{{ existing_repo_files.files }}"
+      ansible.builtin.replace:
+        path: "{{ item.path }}"
+        regexp: '^(?!#)'
+        replace: '#'
+
+
+    - name: Adding Repo
+      notify:
+        - refresh-repos-redhat
+      with_items:
+        - "{{ vars[ansible_facts.distribution + '_' + ansible_facts.distribution_major_version + '_repos'] }}"
+      ansible.builtin.yum_repository:
+        attributes: "{{ item.attributes | default(omit) }}"
+        baseurl: "{{ item.baseurl | default(omit) }}"
+        description: "{{ item.description | default(omit) }}"
+        enabled: "{{ item.enabled | default(true) }}"
+        exclude: "{{ item.exclude | default(omit) }}"
+        failovermethod: "{{ item.failovermethod | default(omit) }}"
+        file: "{{ item.file | default(omit) }}"
+        gpgcakey: "{{ item.gpgcakey | default(omit) }}"
+        gpgcheck: "{{ item.gpgcheck | default(true) }}"
+        gpgkey: "{{ item.gpgkey | default(omit) }}"
+        http_caching: "{{ item.http_caching | default('packages') }}"
+        include: "{{ item.include | default(omit) }}"
+        includepkgs: "{{ item.includepkgs | default(omit) }}"
+        ip_resolve: "{{ item.ip_resolve | default(omit) }}"
+        keepalive: "{{ item.keepalive | default(true) }}"
+        metadata_expire: "{{ item.metadata_expire | default(omit) }}"
+        metadata_expire_filter: "{{ item.metadata_expire_filter | default(omit) }}"
+        metalink: "{{ item.metalink | default(omit) }}"
+        mirrorlist: "{{ item.mirrorlist | default(omit) }}"
+        mirrorlist_expire: "{{ item.mirrorlist_expire | default(omit) }}"
+        name: "{{ item.name }}"
+        password: "{{ item.password | default(omit) }}"
+        priority: "{{ item.priority | default(omit) }}"
+        protect: "{{ item.protect | default(omit) }}"
+        proxy: "{{ item.proxy | default(omit) }}"
+        proxy_password: "{{ item.proxy_password | default(omit) }}"
+        proxy_username: "{{ item.proxy_username | default(omit) }}"
+        repo_gpgcheck: "{{ item.repo_gpgcheck | default(omit) }}"
+        retries: "{{ item.retires | default(omit) }}"
+        s3_enabled: "{{ item.s3_enabled | default(omit) }}"
+        skip_if_unavailable: "{{ item.skip_if_unavailable | default(omit) }}"
+        sslcacert: "{{ item.sslcacert | default(omit) }}"
+        sslclientcert: "{{ item.sslclientcert | default(omit) }}"
+        sslclientkey: "{{ item.sslclientkey | default(omit) }}"
+        sslverify: "{{ item.sslverify | default(true) }}"
+        state: present
+        timeout: "{{ item.timeout | default(2) }}"
+        ui_repoid_vars: "{{ item.ui_repoid_vars | default(omit) }}"
+        username: "{{ item.username | default(omit) }}"
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

@@ -1,0 +1,26 @@
+autofs_distro_info:
+
+
+autofs_family_info:
+  Debian:
+    packages:
+      - autofs
+      - nfs-common
+    services:
+      - autofs.service
+      - rpc-statd.service
+    auto_master_path: /etc/auto.master
+  Gentoo:
+    packages:
+      - autofs
+      - nfs-common
+    services:
+      - autofs.service
+      - rpc-statd.service
+  RedHat:
+    packages:
+      - autofs
+      - nfsv4-client-utils
+    services:
+      - autofs.service
+      - rpc-statd.service

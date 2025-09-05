@@ -1,0 +1,15 @@
+---
+
+
+- name: Create vSphere VM
+  become: false
+  gather_facts: false
+  hosts: "{{ ansible_eda.event.payload.host }}"
+  roles:
+    - create_vsphere_folder
+    - create_vsphere_vm
+  vars:
+    vm: "{{ ansible_eda.event.payload.vm }}"
+  vars_files:
+    - config.yml
+    - private_config.yml

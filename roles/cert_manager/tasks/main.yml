@@ -1,0 +1,73 @@
+- name: Add helm repo
+  become: false
+  delegate_to: "{{ helm_exec_host }}"
+  run_once: true
+  kubernetes.core.helm_repository:
+    name: jetstack
+    repo_url: "{{ cert_manager_repo }}"
+
+
+- name: Deploy helm chart
+  become: false
+  delegate_to: "{{ helm_exec_host }}"
+  register: helm_install
+  run_once: true
+  kubernetes.core.helm:
+    atomic: true
+    chart_ref: "{{ cert_manager_chart }}"
+    chart_version: "{{ cert_manager_version }}"
+    create_namespace: true
+    release_name: cert-manager
+    release_namespace: cert-manager
+    set_values:
+      - value: crds.enabled=true
+      - value: replicaCount=2
+      - value: strategy.type=RollingUpdate
+      - value: strategy.rollingUpdate.maxSurge=0
+      - value: strategy.rollingUpdate.maxUnavailable=1
+      - value: podDisruptionBudget.enabled=true
+      - value: podDisruptionBudget.maxUnavailable=1
+      - value: ingressShim.defaultIssuerName=apss-wcooke-me
+      - value: ingressShim.defaultIssuerKind=ClusterIssuer
+      - value: ingressShim.defaultIssuerGroup=cert-manager.io
+      - value: webhook.replicaCount=2
+      - value: webhook.config.metricsTLSConfig.dynamic.secretNamespace=cert-manager
+      - value: webhook.config.metricsTLSConfig.dynamic.secretName=cert-manager-metrics-ca
+      - value: webhook.config.metricsTLSConfig.dynamic.dnsNames[0]=cert-manager-metrics
+      - value: webhook.strategy.type=RollingUpdate
+      - value: webhook.strategy.rollingUpdate.maxSurge=0
+      - value: webhook.strategy.rollingUpdate.maxUnavailable=1
+      - value: webhook.podDisruptionBudget.enabled=true
+      - value: webhook.podDisruptionBudget.maxUnavailable=1
+      - value: cainjector.replicaCount=2
+      - value: cainjector.config.metricsTLSConfig.dynamic.secretNamespace=cert-manager
+      - value: cainjector.config.metricsTLSConfig.dynamic.secretName=cert-manager-metrics-ca
+      - value: cainjector.config.metricsTLSConfig.dynamic.dnsNames[0]=cert-manager-metrics
+      - value: cainjector.strategy.type=RollingUpdate
+      - value: cainjector.strategy.rollingUpdate.maxSurge=0
+      - value: cainjector.strategy.rollingUpdate.maxUnavailable=1
+      - value: cainjector.podDisruptionBudget.enabled=true
+      - value: cainjector.podDisruptionBudget.maxUnavailable=1
+    update_repo_cache: true
+    wait: true
+
+
+- name: Make helm info directory
+  become: false
+  delegate_to: "{{ helm_exec_host }}"
+  run_once: true
+  ansible.builtin.file:
+    mode: "0700"
+    path: ~/helm-info
+    state: directory
+
+
+- name: Save helm info
+  become: false
+  delegate_to: "{{ helm_exec_host }}"
+  run_once: true
+  ansible.builtin.copy:
+    backup: true
+    content: "{{ helm_install | to_nice_yaml(indent=2) }}"
+    dest: ~/helm-info/cert-manager.yml
+    mode: "0600"

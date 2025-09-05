@@ -1,0 +1,50 @@
+- name: Test if tmout.sh exists
+  become: true
+  register: tmout_stat
+  ansible.builtin.stat:
+    path: /etc/profile.d/tmout.sh
+
+
+- name: Change tmout.sh
+  become: true
+  when:
+    - ansible_facts.os_family == "RedHat"
+    - tmout_stat.stat.isreg is defined and tmout_stat.stat.isreg
+  ansible.builtin.replace:
+    path: /etc/profile.d/tmout.sh
+    regexp: '^typeset'
+    replace: '#typeset'
+
+
+- name: Test if tmux.sh exists
+  become: true
+  register: tmux_stat
+  ansible.builtin.stat:
+    path: /etc/profile.d/tmux.sh
+
+
+- name: Change tmux.sh
+  become: true
+  when:
+    - ansible_facts.os_family == "RedHat"
+    - tmux_stat.stat.isreg is defined and tmux_stat.stat.isreg
+  ansible.builtin.replace:
+    path: /etc/profile.d/tmux.sh
+    regexp: '^  case'
+    replace: '  #case'
+
+
+- name: Change logind.conf
+  become: true
+  notify: restart_systemd_logind
+  ansible.builtin.replace:
+    path: /etc/systemd/logind.conf
+    regexp: '^StopIdleSessionSec'
+    replace: '#StopIdleSessionSec'
+
+
+- name: Remove issue file
+  become: true
+  ansible.builtin.file:
+    path: /etc/issue
+    state: absent

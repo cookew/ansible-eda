@@ -1,0 +1,11 @@
+listen kubernetes-control
+    mode tcp
+    bind :6443
+    option tcplog
+
+    option httpchk GET /healthz HTTP/1.1
+    http-check connect port 6443 ssl alpn h2,http/1.1
+
+{% for host in groups['control_planes'] %}
+    server {{ host }} {{ host }}:6443 check inter {{ kubernetes_control_plane_check_interval | default('250ms') }} verify none
+{% endfor %}

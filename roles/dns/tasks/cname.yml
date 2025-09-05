@@ -1,0 +1,31 @@
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/community/general/nsupdate_module.html
+
+
+- name: Debug
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - dns_record.type == "CNAME"
+  ansible.builtin.debug:
+    msg: "{{ dns_record.value | default(inventory_hostname) | regex_replace('.' + dns_record.zone | default(domain_name) + '$', '') }}"
+
+
+- name: Add DNS CNAME record
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - dns_record.type == "CNAME"
+  community.general.nsupdate:
+    key_algorithm: "{{ dns_key_algorithm | default('hmac-sha512') }}"
+    key_name: "{{ dns_key_name }}"
+    key_secret: "{{ dns_key_secret }}"
+    record: "{{ dns_record.record }}"
+    server: "{{ primary_dns_server }}"
+    state: present
+    ttl: "{{ dns_record.ttl | default(60) }}"
+    type: CNAME
+    value: "{{ dns_record.value | default(inventory_hostname) | regex_replace('.' + dns_record.zone | default(domain_name) + '$', '') }}"
+    zone: "{{ dns_record.zone | default(domain_name) }}"

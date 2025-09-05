@@ -1,0 +1,12 @@
+---
+
+
+- name: Restart services
+  become: true
+  listen: chrony_config
+  loop: "{{ chrony_distro_info[ansible_facts.distribution].services | default(chrony_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: restarted

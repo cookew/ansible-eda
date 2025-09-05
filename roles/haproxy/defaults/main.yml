@@ -1,0 +1,39 @@
+haproxy_distro_info:
+  Ubuntu:
+    packages:
+      - haproxy
+    services:
+      - haproxy.service
+    haproxy_group: haproxy
+    haproxy_user: haproxy
+    haproxy_ca_base: /etc/ssl/certs
+    haproxy_crt_base: /etc/ssl/private
+
+
+haproxy_keepalived_id:
+haproxy_keepalived_interface:
+haproxy_keepalived_vip:
+
+
+# https://ssl-config.mozilla.org/#server=haproxy&version=2.9.10&config=intermediate&openssl=3.3.1&guideline=5.7
+haproxy_ssl_default_bind_curves: X25519:prime256v1:secp384r1
+haproxy_ssl_default_bind_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
+haproxy_ssl_default_bind_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+haproxy_ssl_default_bind_options: prefer-client-ciphers ssl-min-ver TLSv1.2 no-tls-tickets
+
+
+haproxy_ssl_default_server_curves: X25519:prime256v1:secp384r1
+haproxy_ssl_default_server_ciphers: ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256:DHE-RSA-AES256-GCM-SHA384:DHE-RSA-CHACHA20-POLY1305
+haproxy_ssl_default_server_ciphersuites: TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256
+haproxy_ssl_default_server_options: ssl-min-ver TLSv1.2 no-tls-tickets
+
+
+haproxy_stats_port: 1936
+haproxy_stats: enable
+haproxy_stats_url: /
+haproxy_stats_metrics_url: /metrics
+
+
+haproxy_timeout_connect: 5000
+haproxy_timeout_client: 50000
+haproxy_timeout_server: 50000

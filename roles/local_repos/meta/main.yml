@@ -1,0 +1,36 @@
+---
+
+
+dependencies:
+  # - role: install_repo
+  #   vars:
+  #     repo: "{{ repos.debian. }}"
+  #   when:
+  #     - ansible_facts.distribution == "Debian"
+  # - role: install_repo
+  #   vars:
+  #     repo: "{{ repos.debian. }}""
+  #   when:
+  #     - ansible_facts.distribution == "Debian"
+
+  - role: install_repo
+    vars:
+      repo: "{{ repos['redhat-appstream'] }}"
+    when:
+      - ansible_facts.distribution == "RedHat"
+  - role: install_repo
+    vars:
+      repo: "{{ repos['redhat-baseos'] }}"
+    when:
+      - ansible_facts.distribution == "RedHat"
+
+  - role: install_repo
+    vars:
+      repo: "{{ repos['rocky-appstream'] }}"
+    when:
+      - ansible_facts.distribution == "Rocky"
+  - role: install_repo
+    vars:
+      repo: "{{ repos['rocky-baseos'] }}"
+    when:
+      - ansible_facts.distribution == "Rocky"

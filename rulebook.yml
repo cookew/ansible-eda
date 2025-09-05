@@ -1,0 +1,111 @@
+---
+
+
+# https://ansible.readthedocs.io/projects/rulebook/en/stable/index.html
+
+
+- name: Auto Config
+  hosts: all
+  gather_facts: false
+  sources:
+
+    - name: webhook
+      ansible.eda.webhook:
+        port: 6000
+      filters:
+        - ansible.eda.insert_hosts_to_meta:
+            host_path: payload.host
+
+  rules:
+
+    - name: After Cloud-Init Setup
+      condition:
+        all:
+          - event.payload.cloud_init_setup
+      action:
+        run_playbook:
+          name: cloud-init-post-setup.yml
+
+
+- name: vSphere VM
+  hosts: all
+  gather_facts: false
+  sources:
+
+    - name: webhook
+      ansible.eda.webhook:
+        port: 6001
+      filters:
+        - ansible.eda.insert_hosts_to_meta:
+            host_path: payload.host
+
+  rules:
+
+    - name: Create vSphere VM
+      condition:
+        all:
+          - event.payload.create_vsphere_vm
+      action:
+        run_playbook:
+          name: create-vsphere-vm.yml
+
+
+- name: Services Pi Config
+  hosts: all
+  gather_facts: false
+  sources:
+
+    - name: webhook
+      ansible.eda.webhook:
+        port: 6002
+      filters:
+        - ansible.eda.insert_hosts_to_meta:
+            host_path: payload.host
+
+  rules:
+
+    - name: Services Pi Server
+      condition:
+        all:
+          - event.payload.services
+      action:
+        run_playbook:
+          name: services-pi_setup.yml
+
+
+# - name: Kubernetes
+#   hosts: kubernetes
+#   gather_facts: false
+#   sources:
+#     - name: webhook
+#       ansible.eda.webhook:
+#         port: 6001
+#       filters:
+#         - ansible.eda.insert_hosts_to_meta:
+#             host_path: payload.hosts
+
+  # rules:
+
+  #   - name: First Control Node
+  #     condition:
+  #       all:
+  #         - event.payload.kubernetes_first_control_node != false
+  #         - event.payload.kubernetes_first_control_node != 0
+  #       run_playbook:
+  #         name: setup.yml
+
+    # - name: Control Nodes
+    #   condition:
+    #     all:
+    #       - event.payload.kubernetes_control_nodes != false
+    #       - event.payload.kubernetes_control_nodes != 0
+    #     run_playbook:
+    #       name: kubernetes-control-nodes.yml
+
+    # - name: Worker Nodes
+    #   condition:
+    #     all:
+    #       - event.payload.kubernetes_worker_node != false
+    #       - event.payload.kubernetes_worker_node != 0
+    #     run_playbook:
+    #       name: kubernetes-worker-node.yml

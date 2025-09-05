@@ -1,0 +1,55 @@
+---
+
+
+argument_specs:
+  main:
+    short_description: Add or remove DNS entries
+    description:
+      - This role will add or remove dns entries.
+    author:
+      - William Cooke
+    options:
+
+      dns_record_add_ptr:
+        type: bool
+        required: false
+        default: true
+        description:
+          - Adds a PTR record if hte record_type is A or AAAA.
+        choices:
+          - false
+          - true
+
+      dns_key_algorithm:
+        type: str
+        required: false
+        default: hmac-sha256
+        description:
+          - The key algorithm used by dns_key_secret.
+        choices:
+          - HMAC-MD5.SIG-ALG.REG.INT
+          - hmac-md5
+          - hmac-sha1
+          - hmac-sha224
+          - hmac-sha256
+          - hmac-sha384
+          - hmac-sha512
+
+      dns_key_name:
+        type: str
+        required: true
+        description:
+          - The name of the DNS key.
+
+      dns_key_secret:
+        type: str
+        required: true
+        description:
+          - The DNS secret key.
+
+      primary_dns_server:
+        type: str
+        required: true
+        description:
+          - The IP address of a DNS server where records can be changed.
+          - This is probably a primary DNS server.

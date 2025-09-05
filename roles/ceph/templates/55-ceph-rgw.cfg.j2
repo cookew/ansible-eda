@@ -1,0 +1,20 @@
+backend ceph-rgw-http
+    option httpchk GET / HTTP/1.1
+    http-check connect default
+
+    default-server alpn h2,http/1.1 check inter {{ ceph_rgw_check_interval | default('250ms') }}
+
+{% for host in groups[ceph_hosts_group] %}
+    server {{ host }} {{ host }}:80
+{% endfor %}
+
+
+backend ceph-rgw-https
+    # option httpchk GET / HTTP/1.1
+    # http-check connect default
+
+    default-server ssl alpn h2,http/1.1 check check-ssl inter {{ ceph_proxy_check_interval | default('250ms') }} verify none
+
+{% for host in groups[ceph_hosts_group] %}
+    server {{ host }} {{ host }}:443
+{% endfor %}

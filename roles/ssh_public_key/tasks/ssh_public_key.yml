@@ -1,0 +1,40 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/getent_module.html
+
+
+- name: Get root user info
+  become: true
+  ansible.builtin.getent:
+    database: passwd
+    fail_key: false
+    key: "{{ public_key.user }}"
+
+
+- name: Create .ssh directory
+  become: true
+  when:
+    - ansible_facts.getent_passwd[public_key.user][0] is defined
+  ansible.builtin.file:
+    group: "{{ ansible_facts.getent_passwd[public_key.user][2] }}"
+    mode: "0700"
+    owner: "{{ public_key.user }}"
+    path: "{{ ansible_facts.getent_passwd[public_key.user][4] }}/.ssh"
+    state: directory
+
+
+- name: Add SSH Public Key
+  become: true
+  when:
+    - ansible_facts.getent_passwd[public_key.user][0] is defined
+  ansible.builtin.copy:
+    content: "{{ public_key.public_key }}"
+    dest: "{{ ansible_facts.getent_passwd[public_key.user][4] }}/.ssh/authorized_keys"
+    follow: true
+    group: "{{ ansible_facts.getent_passwd[public_key.user][2] }}"
+    mode: "0600"
+    owner: "{{ public_key.user }}"

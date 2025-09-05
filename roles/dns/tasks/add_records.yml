@@ -1,0 +1,21 @@
+---
+
+
+# - name: Add DNS A record
+#   become: false
+#   connection: local
+#   delegate_to: localhost
+#   when:
+#     - dns_record.type == "A"
+#   ansible.builtin.import_tasks:
+#     file: a.yml
+
+
+# - name: Add DNS AAAA record
+#   become: false
+#   connection: local
+#   delegate_to: localhost
+#   when:
+#     - dns_record.type == "AAAA"
+#   ansible.builtin.import_tasks:
+#     file: aaaa.yml

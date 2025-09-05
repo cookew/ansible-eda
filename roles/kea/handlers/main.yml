@@ -1,0 +1,16 @@
+---
+
+
+- name: Restart services
+  become: true
+  listen: kea_config
+  loop: "{{ kea_distro_info[ansible_facts.distribution].services | default(kea_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    label: "{{ service.name | default(service) }}"
+    loop_var: service
+  when:
+    - (service.start is defined and service.start) or
+      not service.start is defined
+  ansible.builtin.systemd_service:
+    name: "{{ service.name | default(service) }}"
+    state: restarted

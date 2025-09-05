@@ -1,0 +1,101 @@
+- name: Setup services Pi
+  become: true
+  gather_facts: true
+#  hosts: "{{ ansible_eda.event.payload.host }}"
+  hosts: services
+  roles:
+#     - raspi_server
+#     - bind
+#     - kea
+#     - chrony
+#    - container_registry
+#    - container_registry_mirror
+#     - dns
+#    - haproxy
+#     - autofs
+    # - tftp
+    - repo
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+# - name: Setup services Pi DNS
+#   become: false
+#   gather_facts: false
+#   hosts: localhost
+#   vars_files:
+#     - config.yml
+#     - private_config.yml
+#   tasks:
+
+
+    # - name: Add wildcard services DNS
+    #   vars:
+    #     dns_records:
+    #       - record: "*.services.{{ domain_name }}."
+    #         type: CNAME
+    #         value: "services.{{ domain_name }}."
+    #       - record: "ntp.{{ domain_name }}."
+    #         type: CNAME
+    #         value: "services.{{ domain_name }}."
+    #   ansible.builtin.include_role:
+    #     name: dns
+
+
+    # - name: Add services DNS
+    #   vars:
+    #     dns_records:
+    #       - add_ptr: false
+    #         record: "services.{{ domain_name }}."
+    #         type: A
+    #         value: "{{ services_servers | map(attribute='ipv4') | list }}"
+    #       - add_ptr: false
+    #         record: "services.{{ domain_name }}."
+    #         type: AAAA
+    #         value: "{{ services_servers | map(attribute='ipv6') | list }}"
+    #       - add_ptr: false
+    #         record: "services-4.{{ domain_name }}."
+    #         type: A
+    #         value: "{{ services_servers | map(attribute='ipv4') | list }}"
+    #       - add_ptr: false
+    #         record: "*.services-4.{{ domain_name }}."
+    #         type: A
+    #         value: "{{ services_servers | map(attribute='ipv4') | list }}"
+    #       - add_ptr: false
+    #         record: "services-6.{{ domain_name }}."
+    #         type: AAAA
+    #         value: "{{ services_servers | map(attribute='ipv6') | list }}"
+    #   ansible.builtin.include_role:
+    #     name: dns
+
+
+    # - name: Add registry DNS
+    #   vars:
+    #     dns_records:
+    #       - record: "registry.{{ domain_name }}."
+    #         type: CNAME
+    #         value: "services.{{ domain_name }}."
+    #   ansible.builtin.include_role:
+    #     name: dns
+
+
+# - name: Setup DNS for other devices
+#   become: true
+#   gather_facts: false
+#   hosts:
+#     - gw.wcooke.me
+#     - nas.wcooke.me
+#     - unify.wcooke.me
+#     - vm-1-bmc.wcooke.me
+#     - vm-2-bmc.wcooke.me
+#     - vm-3-bmc.wcooke.me
+#     - harvester.wcooke.me
+#     - harvester-1.wcooke.me
+#     - harvester-2.wcooke.me
+#     - harvester-3.wcooke.me
+#   roles:
+#     - dns
+#   vars_files:
+#     - config.yml
+#     - private_config.yml

@@ -1,0 +1,6 @@
+- name: Restart autofs
+  become: true
+  listen: autofs_reload
+  ansible.builtin.systemd_service:
+    name: autofs.service
+    state: restarted

@@ -1,0 +1,28 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/file_module.html
+
+
+- name: Applying custom MOTD
+  become: true
+  when:
+    - motd is defined
+  ansible.builtin.copy:
+    content: "{{ motd }}"
+    dest: /etc/motd
+    group: root
+    mode: "0644"
+    owner: root
+
+
+- name: Removing MOTD directory
+  when:
+    - motd_remove_directory is defined
+    - motd_remove_directory is true
+  become: true
+  ansible.builtin.file:
+    path: /etc/motd.d
+    state: absent

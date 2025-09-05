@@ -1,0 +1,46 @@
+---
+
+
+podman_distro_info:
+  Ubuntu:
+    packages:
+      - podman
+    services:
+      - podman.service
+      - podman-restart.service
+    templates:
+      - dest: /etc/containers/registries.conf.d/ansible.conf
+        group: root
+        mode: "0644"
+        owner: root
+        src: ansible.conf
+
+
+podman_family_info:
+  Debian:
+    packages:
+      - podman
+    services:
+      - podman.service
+      - podman-restart.service
+    templates:
+      - dest: /etc/containers/registries.conf.d/ansible.conf
+        group: root
+        mode: "0644"
+        owner: root
+        src: ansible.conf
+  RedHat:
+    packages:
+      - podman
+      - podman-plugins
+    services:
+      - podman-auto-update.service
+      - podman-clean-transient.service
+      - podman-restart.service
+      - podman.service
+    templates:
+      - dest: /etc/containers/registries.conf.d/ansible.conf
+        group: root
+        mode: "0644"
+        owner: root
+        src: ansible.conf

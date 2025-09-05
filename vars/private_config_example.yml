@@ -1,0 +1,25 @@
+---
+
+
+ca_certs:
+  - name: wcooke-root-ca-1
+    cert: |
+      -----BEGIN CERTIFICATE-----
+      -----END CERTIFICATE-----
+
+
+dns_key_algorithm: hmac-sha256
+dns_key_name: coolkeyname
+dns_key_secret: asdf1234==
+primary_dns_server: 10.1.2.3
+
+
+# Keys are only added if the user exists
+ssh_public_key:
+  - user: username
+    public_key: ssh-rsa abcdefg
+
+vcenter:
+  hostname: vcenter.my.domain
+  password: coolpassword
+  username: cooluser

@@ -1,0 +1,79 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_key_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_repository_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/yum_repository_module.html
+
+
+- name: Add Debian Repository
+  become: true
+  when:
+    - ansible_facts.os_family == "Debian"
+  block:
+
+
+    - name: Add apt key
+      ansible.builtin.apt_key:
+        keyring: "/etc/apt/trusted.gpg.d/{{ repo.apt.name }}.gpg"
+        state: present
+        url: "{{ repo.apt.gpg_url }}"
+        validate_certs: true
+
+
+    - name: Adding APT repo
+      ansible.builtin.apt_repository:
+        filename: "{{ repo.apt.name }}.list"
+        repo: "deb [signed-by=/etc/apt/trusted.gpg.d/{{ repo.apt.name }}.gpg] {{ repo.apt.url }} /"
+        state: present
+
+
+- name: Add RPM Repository
+  become: true
+  when:
+    - ansible_facts.os_family == "RedHat"
+  block:
+
+
+    - name: Add RPM Repo
+      ansible.builtin.yum_repository:
+        attributes: "{{ repo.rpm.attributes | default(omit) }}"
+        baseurl: "{{ repo.rpm.baseurl | default(omit) }}"
+        description: "{{ repo.rpm.description }}"
+        enabled: "{{ repo.rpm.enabled | default(true) }}"
+        exclude: "{{ repo.rpm.exclude | default(omit) }}"
+        failovermethod: "{{ repo.rpm.failovermethod | default(omit) }}"
+        file: "{{ repo.rpm.file | default(omit) }}"
+        gpgcakey: "{{ repo.rpm.gpgcakey | default(omit) }}"
+        gpgcheck: "{{ repo.rpm.gpgcheck | default(true) }}"
+        gpgkey: "{{ repo.rpm.gpgkey | default(omit) }}"
+        http_caching: "{{ repo.rpm.http_caching | default('packages') }}"
+        include: "{{ repo.rpm.include | default(omit) }}"
+        includepkgs: "{{ repo.rpm.includepkgs | default(omit) }}"
+        ip_resolve: "{{ repo.rpm.ip_resolve | default(omit) }}"
+        keepalive: "{{ repo.rpm.keepalive | default(true) }}"
+        metadata_expire: "{{ repo.rpm.metadata_expire | default(omit) }}"
+        metadata_expire_filter: "{{ repo.rpm.metadata_expire_filter | default(omit) }}"
+        metalink: "{{ repo.rpm.metalink | default(omit) }}"
+        mirrorlist: "{{ repo.rpm.mirrorlist | default(omit) }}"
+        mirrorlist_expire: "{{ repo.rpm.mirrorlist_expire | default(omit) }}"
+        name: "{{ repo.rpm.name }}"
+        password: "{{ repo.rpm.password | default(omit) }}"
+        priority: "{{ repo.rpm.priority | default(omit) }}"
+        protect: "{{ repo.rpm.protect | default(omit) }}"
+        proxy: "{{ repo.rpm.proxy | default(omit) }}"
+        proxy_password: "{{ repo.rpm.proxy_password | default(omit) }}"
+        proxy_username: "{{ repo.rpm.proxy_username | default(omit) }}"
+        repo_gpgcheck: "{{ repo.rpm.repo_gpgcheck | default(omit) }}"
+        retries: "{{ repo.rpm.retires | default(omit) }}"
+        s3_enabled: "{{ repo.rpm.s3_enabled | default(omit) }}"
+        skip_if_unavailable: "{{ repo.rpm.skip_if_unavailable | default(omit) }}"
+        sslcacert: "{{ repo.rpm.sslcacert | default(omit) }}"
+        sslclientcert: "{{ repo.rpm.sslclientcert | default(omit) }}"
+        sslclientkey: "{{ repo.rpm.sslclientkey | default(omit) }}"
+        sslverify: "{{ repo.rpm.sslverify | default(true) }}"
+        state: "{{ repo.rpm.state | default('present') }}"
+        timeout: "{{ repo.rpm.timeout | default(2) }}"
+        ui_repoid_vars: "{{ repo.rpm.ui_repoid_vars | default(omit) }}"
+        username: "{{ repo.rpm.username | default(omit) }}"

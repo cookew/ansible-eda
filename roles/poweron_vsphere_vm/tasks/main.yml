@@ -1,0 +1,45 @@
+---
+
+
+- name: Set vm variable if not exists
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vm is not defined
+  ansible.builtin.set_fact:
+    vm: {}
+
+
+- name: Combine vSphere variables
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - vsphere_vm is defined
+  ansible.builtin.set_fact:
+    vm: "{{ vsphere_vm | ansible.builtin.combine(vm, list_merge='replace', recursive=true) }}"
+
+
+- name: Build vSphere folder path
+  become: false
+  connection: local
+  delegate_to: localhost
+  ansible.builtin.set_fact:
+    vsphere_path: "{{ [vm.parent_folder | default(''), vm.folder | default('')] | select() }}"
+
+
+- name: Wait until guest is powered off
+  become: false
+  delegate_to: localhost
+  register: vm_status
+  community.vmware.vmware_guest_powerstate:
+    datacenter: "{{ vsphere.datacenter }}"
+    folder: "/{{ vsphere_path | join('/') }}"
+    hostname: "{{ vcenter.hostname }}"
+    name_match: first
+    name: "{{ vm.name | default(vm.hostname) | default(inventory_hostname_short) }}"
+    password: "{{ vcenter.password }}"
+    state: powered-on
+    username: "{{ vcenter.username }}"
+    validate_certs: true

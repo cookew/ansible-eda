@@ -1,0 +1,25 @@
+---
+
+
+chrony_family_info:
+  Debian:
+    chrony_conf_group: root
+    chrony_conf_mode: "0644"
+    chrony_conf_owner: root
+    chrony_conf_path: /etc/chrony/chrony.conf
+    packages:
+      - chrony
+    services:
+      - chrony.service
+  RedHat:
+    chrony_conf_group: root
+    chrony_conf_mode: "0644"
+    chrony_conf_owner: root
+    chrony_conf_path: /etc/chrony/chrony.conf
+    packages:
+      - chrony
+    services:
+      - chrony.service
+
+
+chrony_local_servers: []

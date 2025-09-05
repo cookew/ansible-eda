@@ -1,0 +1,9 @@
+- name: Reboot
+  listen: raspi_config
+  ansible.builtin.reboot:
+    connect_timeout: 300
+    msg: Rebooting to complete cleanup
+    post_reboot_delay: 0
+    pre_reboot_delay: 0
+    reboot_timeout: 300
+    test_command: uptime

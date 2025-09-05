@@ -1,0 +1,17 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/command_module.html
+
+
+- name: Updating CA Trust List
+  become: true
+  changed_when: false
+  listen: update-ca-certs
+  when:
+    - ca_certs_distro_info[ansible_facts.distribution].ca_cert_update_command is defined or
+      ca_certs_family_info[ansible_facts.os_family].ca_cert_update_command is defined
+  ansible.builtin.command:
+    # yamllint disable-line rule:line-length
+    cmd: "{{ ca_certs_distro_info[ansible_facts.distribution].ca_cert_update_command | default(ca_certs_family_info[ansible_facts.os_family].ca_cert_update_command) }}"

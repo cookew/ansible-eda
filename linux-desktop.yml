@@ -1,0 +1,40 @@
+# - name: Cloud-Init Post Setup
+#   become: true
+#   gather_facts: false
+#   # hosts: "{{ ansible_eda.event.payload.host | default(omit) }}"
+#   hosts: ceph-[1-4].wcooke.me
+#   roles:
+#     - cloud_init_wait
+
+
+- name: Cloud-Init Post Setup
+  become: true
+  gather_facts: true
+  hosts: linux-desktop.wcooke.me
+  roles:
+#    - ca_certs
+#    - local_repos
+#    - aliases
+#    - autofs
+#    - firefox
+#    - fstrim
+#    - google_chrome
+#    - home_bin
+#    - insecure
+#    - logoff_timeout
+    - logrotate
+#    - motd
+#    - networkmanager
+#    - open_vm_tools
+    - podman
+#    - ps1_color
+    - ssh_public_key
+#    - subscription_manager
+#    - sudoers
+#    - systemd_journald
+#    - systemd_resolved
+    - vim
+    - dns
+  vars_files:
+    - config.yml
+    - private_config.yml

@@ -1,0 +1,7 @@
+tftp_distro_info:
+  Ubuntu:
+    packages:
+      - ipxe
+      - tftpd-hpa
+    services:
+      - tftpd-hpa.service

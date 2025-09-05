@@ -1,0 +1,28 @@
+- name: Retart services
+  become: true
+  listen: tftp_config
+  loop: "{{ tftp_distro_info[ansible_facts.distribution].services | default(tftp_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: restarted
+
+
+- name: Reload services
+  become: true
+  listen: tftp_reload
+  loop: "{{ tftp_distro_info[ansible_facts.distribution].services | default(tftp_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: reloaded
+
+
+- name: Reload haproxy
+  become: true
+  listen: haproxy_reload
+  ansible.builtin.systemd_service:
+    name: haproxy.service
+    state: reloaded

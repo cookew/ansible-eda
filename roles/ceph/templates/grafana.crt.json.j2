@@ -1,0 +1,5 @@
+{
+{%- for host in ansible_play_hosts %}
+"{{ host | split(".") | first }}": {"cert": {{ ceph_grafana_cert | ansible.builtin.to_json }}, "user_made": false}{% if loop.index < loop.length %},{% endif %}
+{%- endfor -%}
+}

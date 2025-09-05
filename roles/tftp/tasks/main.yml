@@ -1,0 +1,122 @@
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ tftp_distro_info[ansible_facts.distribution].packages | default(tftp_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enable services
+  become: true
+  loop: "{{ tftp_distro_info[ansible_facts.distribution].services | default(tftp_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service }}"
+
+
+# - name: Copy tftp server configuration file
+#   become: true
+#   notify: tftp_config
+#   ansible.builtin.template:
+#     dest: /etc/default/tftpd-hpa.cfg
+#     group: root
+#     mode: "0644"
+#     owner: root
+#     src: tftpd.conf.j2
+
+
+- name: Start services
+  become: true
+  loop: "{{ tftp_distro_info[ansible_facts.distribution].services | default(tftp_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: started
+
+
+- name: Copy ipxe boot files to tftp server directory
+  become: true
+  ansible.builtin.copy:
+    dest: /srv/tftp/ipxe-x86_64.efi
+    group: root
+    mode: "0644"
+    owner: root
+    remote_src: true
+    src: /boot/ipxe.efi
+
+
+- name: Copy proxy configs
+  become: true
+  loop:
+    - 40-ipxe.cfg
+  loop_control:
+    loop_var: file
+  notify: haproxy_reload
+  ansible.builtin.template:
+    dest: "/etc/haproxy/conf.d/{{ file }}"
+    group: root
+    mode: "0644"
+    owner: root
+    src: "{{ file }}.j2"
+
+
+- name: Add proxy backend config
+  become: true
+  vars:
+    proxy:
+      - name: ipxe
+        alpn: alpn h2,http/1.1
+        cert: "{{ ipxe_cert }}"
+        http_frontend_config: |
+          use_backend ipxe if { hdr(host) -i ipxe.services.{{ domain_name }} }
+          use_backend ipxe if { hdr(host) -i ipxe.services-4.{{ domain_name }} }
+          use_backend ipxe if { hdr(host) -i ipxe.services-6.{{ domain_name }} }
+        https_frontend_config: |
+          use_backend ipxe if { hdr(host) -i ipxe.services.{{ domain_name }} }
+          use_backend ipxe if { hdr(host) -i ipxe.services-4.{{ domain_name }} }
+          use_backend ipxe if { hdr(host) -i ipxe.services-6.{{ domain_name }} }
+  ansible.builtin.import_role:
+    name: haproxy
+    tasks_from: add_proxy.yml
+
+
+- name: Remove existing podman iPXE Nginx NFS volume
+  become: false
+  containers.podman.podman_volume:
+    name: ipxe_html
+    # options:
+    #   - "device={{ ipxe_html_nfs_host }}:{{ ipxe_html_nfs_path }}"
+    #   - "o=rw"
+    #   - "type=nfs"
+    state: absent
+
+
+- name: Run iPXE Nginx container
+  become: false
+  containers.podman.podman_container:
+    cpus: 0.25
+    detach: true
+    image: docker.io/library/nginx:1.27.5
+    image_strict: true
+    image_volume: ignore
+    memory: 32m
+    name: ipxe
+    publish:
+      - 8002:80/tcp
+    pull: missing
+    # read_only: true
+    read_only_tmpfs: true
+    restart_policy: always
+    shm_size: 8m
+    shm_size_systemd: 8m
+    state: started
+    timezone: local
+    tls_verify: true
+    volume:
+      - "/net/{{ ipxe_html_nfs_host }}{{ ipxe_html_nfs_path }}:/usr/share/nginx/html:ro"
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

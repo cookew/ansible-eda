@@ -1,0 +1,17 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/community/docker/docker_login_module.html
+
+
+- name: Docker Login
+  when:
+    - container_registry.url is defined
+    - container_registry.password is defined
+    - container_registry.username is defined
+  community.docker.docker_login:
+    password: "{{ container_registry.password }}"
+    reauthorize: true
+    registry_url: "{{ container_registry.url }}"
+    username: "{{ container_registry.username }}"

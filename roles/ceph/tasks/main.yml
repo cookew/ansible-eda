@@ -1,0 +1,220 @@
+---
+
+
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    install_recommends: false
+    name: "{{ ceph_distro_info[ansible_facts.distribution].packages | default(ceph_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+# - name: Download cephadm to localhost
+#   become: false
+#   delegate_to: localhost
+#   run_once: true
+#   ansible.builtin.get_url:
+#     dest: ~/.cache/cephadm.{{ ceph_ceph_version }}
+#     url: "https://download.ceph.com/rpm-{{ ceph_ceph_version }}/el9/noarch/cephadm"
+
+
+# - name: Copy cephadm to hosts
+#   become: true
+#   ansible.builtin.copy:
+#     dest: /usr/local/sbin/cephadm
+#     group: root
+#     mode: "0755"
+#     owner: root
+#     src: ~/.cache/cephadm.{{ ceph_ceph_version }}
+
+
+# - name: Create ceph group
+#   become: true
+#   ansible.builtin.group:
+#     name: ceph
+#     state: present
+#     system: true
+
+
+# - name: Create ceph user
+#   become: true
+#   ansible.builtin.user:
+#     create_home: true
+#     expires: -1
+#     group: ceph
+#     name: ceph.svc
+#     password: "!"
+#     state: present
+#     system: true
+
+
+- name: Allow SSH user to sudo
+  become: true
+  community.general.sudoers:
+    commands:
+      - ALL
+    host: ALL
+    name: cephadm
+    nopassword: true
+    state: present
+    user: "{{ ceph_ssh_owner }}"
+
+
+- name: Create SSH directory
+  become: true
+  ansible.builtin.file:
+    dest: "{{ ceph_ssh_home_directory }}/.ssh"
+    group: "{{ ceph_ssh_user_group }}"
+    mode: "0700"
+    owner: "{{ ceph_ssh_owner }}"
+    state: directory
+
+
+- name: Copy SSH public keys
+  become: true
+  ansible.builtin.template:
+    dest: "{{ ceph_ssh_home_directory }}/.ssh/authorized_keys"
+    group: "{{ ceph_ssh_user_group }}"
+    mode: "0600"
+    owner: "{{ ceph_ssh_owner }}"
+    src: ssh_public_key.j2
+
+
+- name: Copy bootstrap files to bootstrap host
+  become: true
+  delegate_to: "{{ ceph_bootstrap_host }}"
+  loop:
+    - dashboard.crt
+    - dashboard.key
+    - grafana.crt.json
+    - grafana.key.json
+    - s3buckets.crt
+    - s3buckets.key
+    - s3buckets.crt.json
+    - ssh_public_key
+    - ssh_private_key
+  loop_control:
+    loop_var: bootstrap_file
+  run_once: true
+  ansible.builtin.template:
+    dest: "/root/{{ bootstrap_file }}"
+    group: root
+    mode: "0600"
+    owner: root
+    src: "{{ bootstrap_file }}.j2"
+
+
+- name: Get stats on a mongodb compass apparmor profile
+  become: true
+  register: mongodb_stat
+  when:
+    - ansible_facts.distribution == "Ubuntu"
+  ansible.builtin.stat:
+    path: /etc/apparmor.d/MongoDB_Compass
+
+
+- name: Remove broken apparmor from the running kernel
+  become: true
+  changed_when: false
+  check_mode: false
+  when:
+    - ansible_facts.distribution == "Ubuntu"
+    - mongodb_stat.stat.isreg is defined
+    - mongodb_stat.stat.isreg
+  failed_when: false
+  ansible.builtin.command:
+    cmd: apparmor_parser --remove /etc/apparmor.d/MongoDB_Compass
+
+
+- name: Remove the broken apparmor profile
+  become: true
+  when:
+    - ansible_facts.distribution == "Ubuntu"
+  ansible.builtin.file:
+    path: /etc/apparmor.d/MongoDB_Compass
+    state: absent
+
+
+- name: Bootstrap the ceph cluster
+  become: true
+  delegate_to: "{{ ceph_bootstrap_host }}"
+  run_once: true
+  ansible.builtin.command:
+    # yamllint disable-line rule:line-length
+    cmd: "cephadm bootstrap --dashboard-crt dashboard.crt --dashboard-key dashboard.key --dashboard-password-noupdate --initial-dashboard-password {{ ceph_dashboard_password }} --initial-dashboard-user {{ ceph_dashboard_username }} --mon-ip {{ ceph_ip }} --ssh-private-key ssh_private_key --ssh-public-key ssh_public_key --ssh-user {{ ceph_ssh_owner }}"
+    creates: /etc/ceph/ceph.conf
+
+
+- name: Get list of cluster hosts
+  become: true
+  changed_when: false
+  delegate_to: "{{ ceph_bootstrap_host }}"
+  register: ceph_host_list
+  run_once: true
+  ansible.builtin.command:
+    cmd: ceph orch host ls --format json
+
+
+- name: Add host
+  become: true
+  changed_when: false
+  delegate_to: "{{ ceph_bootstrap_host }}"
+  when:
+    - ceph_host_list.stdout | ansible.builtin.from_json | selectattr("hostname", "equalto", inventory_hostname_short) | list | count < 1
+  ansible.builtin.command:
+    cmd: "ceph orch host add {{ inventory_hostname_short }}"
+
+
+- name: Get list of host labels
+  become: true
+  changed_when: false
+  delegate_to: "{{ ceph_bootstrap_host }}"
+  register: ceph_host_list
+  run_once: true
+  ansible.builtin.command:
+    cmd: ceph orch host ls --format json
+
+
+- name: Apply host label
+  become: true
+  changed_when: true
+  delegate_to: "{{ ceph_bootstrap_host }}"
+  loop: "{{ ceph_host_labels }}"
+  loop_control:
+    # label: "{{ host_label }}"
+    loop_var: host_label
+  when:
+    - ceph_host_labels is defined
+    # yamllint disable-line rule:line-length
+    - not host_label in ceph_host_list.stdout | ansible.builtin.from_json | selectattr("hostname", "equalto", inventory_hostname_short) | map(attribute="labels") | first
+  ansible.builtin.command:
+    cmd: "ceph orch host label add {{ inventory_hostname_short }} {{ host_label }}"
+
+
+- name: Remove extra labels
+  become: true
+  changed_when: true
+  delegate_to: "{{ ceph_bootstrap_host }}"
+  # yamllint disable-line rule:line-length
+  loop: '{{ ceph_host_list.stdout | ansible.builtin.from_json | selectattr("hostname", "equalto", inventory_hostname_short) | map(attribute="labels") | first }}'
+  loop_control:
+    # label: "{{ host_label_on_server }}"
+    loop_var: host_label_on_server
+  when:
+    - ceph_host_labels is defined
+    # yamllint disable-line rule:line-length
+    - not host_label_on_server in ceph_host_labels
+  ansible.builtin.command:
+    cmd: "ceph orch host label rm {{ inventory_hostname_short }} {{ host_label_on_server }} --force"
+
+
+- name: Run ceph commands
+  become: true
+  changed_when: true
+  delegate_to: "{{ ceph_bootstrap_host }}"
+  loop: "{{ ceph_commands }}"
+  loop_control:
+    loop_var: ceph_command
+  run_once: true
+  ansible.builtin.command:
+    cmd: "ceph {{ ceph_command }}"

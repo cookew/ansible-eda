@@ -1,0 +1,22 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/wait_for_connection_module.html
+# https://docs.ansible.com/ansible/latest/collections/community/general/cloud_init_data_facts_module.html
+
+
+- name: Wait for ssh access
+  ansible.builtin.wait_for_connection:
+    timeout: 5
+
+
+- name: Wait for cloud init to finish
+  delay: 5
+  register: res
+  retries: 50
+  until:
+    - res.cloud_init_data_facts.status.v1.stage is defined
+    - not res.cloud_init_data_facts.status.v1.stage
+  community.general.cloud_init_data_facts:
+    filter: status

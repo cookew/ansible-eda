@@ -1,0 +1,18 @@
+- name: Package Facts
+  become: true
+  hosts: kubernetes
+  vars_files:
+    - config.yml
+    - private_config.yml
+  tasks:
+
+    - name: Get package facts
+      become: true
+      ansible.builtin.package_facts:
+
+    - name: Print packages
+      when:
+        - '"containerd.io" in ansible_facts.packages'
+        - 'ansible_facts.packages["containerd.io"][0].version is version("2.0.0", "gt")'
+      ansible.builtin.debug:
+        var: ansible_facts.packages["containerd.io"][0].version

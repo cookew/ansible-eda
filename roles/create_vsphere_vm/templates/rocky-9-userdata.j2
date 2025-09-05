@@ -1,0 +1,46 @@
+#cloud-config
+fqdn: {{ inventory_hostname }}
+growpart:
+  mode: auto
+  devices: [/dev/vda3]
+hostname: {{ inventory_hostname_short }}
+locale: en_US.UTF-8
+random_seed:
+  command: ['sh', '-c', 'dd bs=1M count=1 if=/dev/urandom of=\$RANDOM_SEED_FILE']
+  command_required: true
+  data: my random string
+  encoding: raw
+  file: /dev/urandom
+users:
+- name: root
+  hashed_passwd: {{ root_hashed_password }}
+  lock_passwd: false
+- name: {{ ansible_user }}
+  ssh_authorized_keys:
+    - {{ ansible_ssh_public_key }}
+  sudo: ALL=(ALL) NOPASSWD:ALL
+runcmd:
+
+# Resize the physical volume
+- pvresize /dev/vda3
+
+# Resize the logical volume
+- lvextend -L4G /dev/vg1/vartmp
+- lvextend -l+100%FREE /dev/vg1/root
+
+# Resize the partition
+- xfs_growfs /dev/vg1/vartmp
+- xfs_growfs /dev/vg1/root
+
+# Fix resolv.conf
+- rm -f /etc/resolv.conf
+- ln -s /run/NetworkManager/resolv.conf /etc/resolv.conf
+
+# Migrate the cloud-init network config to NetworkManager from sysconfig
+- rm -rf /etc/NetworkManager/system-connections/*
+- nmcli connection migrate
+- rm -rf /etc/NetworkManager/system-connections/en*
+- nmcli connection reload
+- nmcli connection up System\ ens32
+
+- echo "Cloud-init done."

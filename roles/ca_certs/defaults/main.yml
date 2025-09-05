@@ -1,0 +1,35 @@
+---
+
+
+ca_certs_distro_info:
+  Ubuntu:
+    ca_cert_directory: /usr/local/share/ca-certificates
+    ca_cert_file_extension: crt
+    ca_cert_file_group: root
+    ca_cert_file_mode: "0644"
+    ca_cert_file_owner: root
+    ca_cert_update_command: update-ca-certificates --fresh
+
+
+ca_certs_family_info:
+  Debian:
+    ca_cert_directory: /usr/local/share/ca-certificates
+    ca_cert_file_extension: pem
+    ca_cert_file_group: root
+    ca_cert_file_mode: "0644"
+    ca_cert_file_owner: root
+    ca_cert_update_command: update-ca-certs --fresh
+  Gentoo:
+    ca_cert_directory: /usr/local/share/ca-certificates
+    ca_cert_file_extension: pem
+    ca_cert_file_group: root
+    ca_cert_file_mode: "0644"
+    ca_cert_file_owner: root
+    ca_cert_update_command: update-ca-certs --fresh
+  RedHat:
+    ca_cert_directory: /etc/pki/ca-trust/source/anchors
+    ca_cert_file_extension: crt
+    ca_cert_file_group: root
+    ca_cert_file_mode: "0644"
+    ca_cert_file_owner: root
+    ca_cert_update_command: update-ca-trust

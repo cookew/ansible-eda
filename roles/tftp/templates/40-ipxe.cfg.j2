@@ -1,0 +1,9 @@
+backend ipxe
+    # option httpchk GET /healthz HTTP/1.1
+    # http-check connect default
+
+    default-server alpn h2,http/1.1 check inter 1000ms verify none
+
+{% for host in groups['services'] %}
+    server {{ host }} {{ host }}:8002
+{% endfor %}

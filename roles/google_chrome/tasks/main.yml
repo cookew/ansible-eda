@@ -1,0 +1,18 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+
+
+- name: Add Google Chrome cert add script
+  become: true
+  when:
+    - host_sub_type is defined
+    - host_sub_type == "desktop"
+  ansible.builtin.copy:
+    dest: /etc/profile.d/google_chrome_certs.sh
+    group: root
+    mode: "0644"
+    src: google_chrome_certs.sh
+    owner: root

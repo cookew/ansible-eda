@@ -1,0 +1,35 @@
+- name: Setup OKD DNS
+  become: false
+  gather_facts: false
+  hosts: svc-1.wcooke.me
+  roles:
+    - dns
+  vars:
+    dns_records:
+      - record: "*.apps.iaas.{{ domain_name }}."
+        add_ptr: false
+        type: A
+        value: 10.42.41.50
+      - record: "api.iaas.{{ domain_name }}."
+        type: A
+        value: 10.42.41.54
+      - record: "api-int.iaas.{{ domain_name }}."
+        type: CNAME
+        value: "api.iaas.{{ domain_name }}."
+      - record: "provisioner.iaas.{{ domain_name }}."
+        type: A
+        value: 10.42.41.55
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+- name: Setup OKD DNS
+  become: false
+  gather_facts: false
+  hosts: iaas_mgmt
+  roles:
+    - dns
+  vars_files:
+    - config.yml
+    - private_config.yml

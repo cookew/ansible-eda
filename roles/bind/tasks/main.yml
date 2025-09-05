@@ -1,0 +1,211 @@
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ bind_distro_info[ansible_facts.distribution].packages | default(bind_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enable services
+  become: true
+  loop: "{{ bind_distro_info[ansible_facts.distribution].services | default(bind_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service }}"
+
+
+- name: Start services
+  become: true
+  loop: "{{ bind_distro_info[ansible_facts.distribution].services | default(bind_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: started
+
+
+- name: Get service facts
+  become: true
+  ansible.builtin.service_facts:
+
+
+- name: Enable Firewalld ports
+  become: true
+  loop:
+    - 53/tcp
+    - 53/udp
+    - 953/tcp
+  loop_control:
+    loop_var: port
+  when:
+    - '"firewalld.service" in ansible_facts["services"]'
+  ansible.posix.firewalld:
+    immediate: true
+    permanent: true
+    port: "{{ port }}"
+    state: enabled
+
+
+- name: Enable Firewalld custom controls ports
+  become: true
+  loop: "{{ bind_controls }}"
+  loop_control:
+    loop_var: control
+  when:
+    - '"firewalld.service" in ansible_facts["services"]'
+    - control.port is defined
+  ansible.posix.firewalld:
+    immediate: true
+    permanent: true
+    port: "{{ control.port }}/tcp"
+    state: enabled
+
+
+- name: Enable UFW ports
+  become: true
+  loop:
+    - 53/tcp
+    - 53/udp
+    - 953/tcp
+  loop_control:
+    loop_var: port
+  when:
+    - '"ufw.service" in ansible_facts["services"]'
+  community.general.ufw:
+    port: "{{ port | split('/') | first }}"
+    proto: "{{ port | split('/') | last }}"
+    rule: allow
+
+
+- name: Enable UFW custom controls ports
+  become: true
+  loop: "{{ bind_controls }}"
+  loop_control:
+    loop_var: control
+  when:
+    - '"ufw.service" in ansible_facts["services"]'
+    - control.port is defined
+  community.general.ufw:
+    port: "{{ control.port }}"
+    proto: tcp
+    rule: allow
+
+
+# This is for Ubuntu.
+# Needs to check for Ubuntu pro subscription first
+# - name: Enable FIPS
+#   become: true
+#   notify: bind_config
+#   ansible.builtin.lineinfile:
+#     insertbefore: EOF
+#     line: OPTIONS="${OPTIONS} -F"
+#     path: /etc/default/named
+
+
+- name: Copy named.conf
+  become: true
+  notify: bind_config
+  ansible.builtin.template:
+    # yamllint disable-line rule:line-length
+    dest: "{{ bind_distro_info[ansible_facts.distribution].named_conf_path | default(bind_family_info[ansible_facts.os_family].named_conf_path) }}"
+    group: "{{ bind_distro_info[ansible_facts.distribution].group_name | default(bind_family_info[ansible_facts.os_family].group_name) }}"
+    mode: "0640"
+    owner: root
+    src: named.conf.j2
+
+
+- name: Create /var/lib/bind
+  become: true
+  notify: bind_config
+  ansible.builtin.file:
+    group: "{{ bind_distro_info[ansible_facts.distribution].group_name | default(bind_family_info[ansible_facts.os_family].group_name) }}"
+    mode: "2770"
+    owner: root
+    path: /var/lib/bind/zones
+    state: directory
+
+
+- name: Copy /var/lib/bind files
+  become: true
+  notify: bind_config
+  loop:
+    - 0.in-addr.arpa
+    - 127.in-addr.arpa
+    - 255.in-addr.arpa
+    - blackhole
+    - localhost
+    - root.hints
+  ansible.builtin.template:
+    dest: "/var/lib/bind/{{ item }}"
+    group: "{{ bind_distro_info[ansible_facts.distribution].group_name | default(bind_family_info[ansible_facts.os_family].group_name) }}"
+    mode: "0640"
+    owner: root
+    src: "{{ item }}.j2"
+
+
+- name: Copy primary specific files
+  become: true
+  notify: bind_config
+  loop:
+    - catalog.catalog
+  when:
+    - bind_is_primary_server is defined and bind_is_primary_server
+  ansible.builtin.template:
+    dest: "/var/lib/bind/{{ item }}"
+    group: "{{ bind_distro_info[ansible_facts.distribution].group_name | default(bind_family_info[ansible_facts.os_family].group_name) }}"
+    mode: "0640"
+    owner: root
+    src: "{{ item }}.j2"
+
+
+- name: Create /var/lib/bind/catalog_zones
+  become: true
+  notify: bind_config
+  when:
+    - (bind_is_primary_server is defined and bind_is_primary_server is false) or
+      not bind_is_primary_server is defined
+  ansible.builtin.file:
+    group: "{{ bind_distro_info[ansible_facts.distribution].group_name | default(bind_family_info[ansible_facts.os_family].group_name) }}"
+    mode: "2770"
+    owner: root
+    path: /var/lib/bind/catalog_zones
+    state: directory
+
+
+- name: Create /var/lib/bind/zones
+  become: true
+  notify: bind_config
+  ansible.builtin.file:
+    group: "{{ bind_distro_info[ansible_facts.distribution].group_name | default(bind_family_info[ansible_facts.os_family].group_name) }}"
+    mode: "2770"
+    owner: root
+    path: /var/lib/bind/zones
+    state: directory
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+
+- name: Create zone files
+  become: true
+  notify: rndc
+  loop: "{{ bind_catalog_zones }}"
+  loop_control:
+    label: "{{ zone.zone }}"
+    loop_var: zone
+  register: zones_updated
+  when:
+    - bind_is_primary_server is defined and bind_is_primary_server
+    - zone.type == "primary"
+  ansible.builtin.template:
+    dest: /var/lib/bind/zones/{{ zone.zone }}
+    group: "{{ bind_distro_info[ansible_facts.distribution].group_name | default(bind_family_info[ansible_facts.os_family].group_name) }}"
+    mode: "0660"
+    owner: "{{ bbind_distro_info[ansible_facts.distribution].owner_name | default(bind_family_info[ansible_facts.os_family].owner_name) }}"
+    src: template.primary.j2
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

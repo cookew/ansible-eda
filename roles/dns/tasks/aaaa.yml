@@ -1,0 +1,46 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/community/general/nsupdate_module.html
+
+
+- name: Add DNS AAAA record
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - dns_record.type == "AAAA"
+  community.general.nsupdate:
+    key_algorithm: "{{ dns_key_algorithm | default('hmac-sha512') }}"
+    key_name: "{{ dns_key_name }}"
+    key_secret: "{{ dns_key_secret }}"
+    record: "{{ dns_record.record | default(inventory_hostname) | regex_replace('.' + dns_record.zone | default(domain_name) + '$', '') }}"
+    server: "{{ primary_dns_server }}"
+    state: present
+    ttl: "{{ dns_record.ttl | default(60) }}"
+    type: AAAA
+    value: "{{ dns_record.value | default(ipv6[0].address) }}"
+    zone: "{{ dns_record.zone | default(domain_name) }}"
+
+
+- name: Add DNS IPv6 Reverse PTR record
+  become: false
+  connection: local
+  delegate_to: localhost
+  when:
+    - dns_record.type == "AAAA"
+    - dns_record.add_ptr is not defined or
+      (dns_record.add_ptr is defined and dns_record.add_ptr)
+  community.general.nsupdate:
+    key_algorithm: "{{ dns_key_algorithm | default('hmac-sha512') }}"
+    key_name: "{{ dns_key_name }}"
+    key_secret: "{{ dns_key_secret }}"
+    # yamllint disable-line rule:line-length
+    record: "{{ dns_record.value | default(ipv6[0].address) | reverse_pointer | regex_replace('.' + dns_record.ipv6_ptr_zone | default(ipv6_reverse_zone) + '$', '') }}"
+    server: "{{ primary_dns_server }}"
+    state: present
+    ttl: "{{ dns_record.ptr_ttl | default(dns_record.ttl) | default(3600) }}"
+    type: PTR
+    value: "{{ dns_record.record | default(inventory_hostname) }}."
+    zone: "{{ dns_record.ipv6_ptr_zone | default(ipv6_reverse_zone) }}"

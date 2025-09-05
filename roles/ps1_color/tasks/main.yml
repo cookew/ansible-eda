@@ -1,0 +1,18 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+
+
+- name: Adding PS1 Colors
+  become: true
+  when:
+    - ps1_color is defined
+    - ansible_facts.os_family != "Gentoo"
+  ansible.builtin.copy:
+    content: "{{ ps1_color }}"
+    dest: /etc/profile.d/zzz_ps1_color.sh
+    owner: root
+    group: root
+    mode: "0644"

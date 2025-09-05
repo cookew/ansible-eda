@@ -1,0 +1,13 @@
+---
+
+
+logrotate_family_info:
+  Debian:
+    packages:
+      - logrotate
+  Gentoo:
+    packages:
+      - logrotate
+  RedHat:
+    packages:
+      - logrotate

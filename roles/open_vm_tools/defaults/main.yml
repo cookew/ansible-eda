@@ -1,0 +1,14 @@
+---
+
+
+open_vm_tools_family_info:
+  Debian:
+    packages:
+      - open-vm-tools
+    services:
+      - open-vm-tools.service
+  RedHat:
+    packages:
+      - open-vm-tools
+    services:
+      - vmtoolsd.service

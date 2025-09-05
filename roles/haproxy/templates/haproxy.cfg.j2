@@ -1,0 +1,51 @@
+global
+    log stdout format short daemon
+    chroot /var/lib/haproxy
+    stats socket /run/haproxy/admin.sock mode 660 level admin expose-fd listeners
+    stats timeout 30s
+    user {{ haproxy_distro_info[ansible_facts.distribution].haproxy_user | default(haproxy_family_info[ansible_facts.os_family].haproxy_user) }}
+    group {{ haproxy_distro_info[ansible_facts.distribution].haproxy_group | default(haproxy_family_info[ansible_facts.os_family].haproxy_group) }}
+    daemon
+
+    ca-base {{ haproxy_distro_info[ansible_facts.distribution].haproxy_ca_base | default(haproxy_family_info[ansible_facts.os_family].haproxy_ca_base) }}
+    crt-base {{ haproxy_distro_info[ansible_facts.distribution].haproxy_crt_base | default(haproxy_family_info[ansible_facts.os_family].haproxy_crt_base) }}
+
+    {% if haproxy_ssl_default_bind_curves %}ssl-default-bind-curves {{ haproxy_ssl_default_bind_curves }}{% endif %}
+
+    {% if haproxy_ssl_default_bind_ciphers %}ssl-default-bind-ciphers {{ haproxy_ssl_default_bind_ciphers }}{% endif %}
+
+    {% if haproxy_ssl_default_bind_ciphersuites %}ssl-default-bind-ciphersuites {{ haproxy_ssl_default_bind_ciphersuites }}{% endif %}
+
+    {% if haproxy_ssl_default_bind_options %}ssl-default-bind-options {{ haproxy_ssl_default_bind_options }}{% endif %}
+
+    {% if haproxy_ssl_default_server_curves %}ssl-default-server-curves {{ haproxy_ssl_default_server_curves }}{% endif %}
+
+    {% if haproxy_ssl_default_server_ciphers %}ssl-default-server-ciphers {{ haproxy_ssl_default_server_ciphers }}{% endif %}
+
+    {% if haproxy_ssl_default_server_ciphersuites %}ssl-default-server-ciphersuites {{ haproxy_ssl_default_server_ciphersuites }}{% endif %}
+
+    {% if haproxy_ssl_default_server_options %}ssl-default-server-options {{ haproxy_ssl_default_server_options }}{% endif %}
+
+    ssl-dh-param-file /etc/haproxy/dhparam
+
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  httpslog
+    option  dontlognull
+    timeout connect {{ haproxy_timeout_connect }}
+    timeout client  {{ haproxy_timeout_client }}
+    timeout server  {{ haproxy_timeout_server }}
+
+
+listen stats
+    bind    :{{ haproxy_stats_port }} ssl crt /etc/haproxy/stats.crt alpn h2,http/1.1
+    stats   {{ haproxy_stats }}
+    stats   refresh 3s
+    stats   show-legends
+    stats   show-modules
+    stats   show-node
+    stats   uri {{ haproxy_stats_url }}
+    http-request use-service prometheus-exporter if { path {{ haproxy_stats_metrics_url }} }

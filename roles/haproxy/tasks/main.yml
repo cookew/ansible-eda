@@ -1,0 +1,151 @@
+- name: Create keepalived vip
+  vars:
+    vip:
+      name: haproxy
+      id: 25
+      ip: "{{ haproxy_ipv4_vip }}"
+  ansible.builtin.include_role:
+    name: keepalived
+    tasks_from: create_vip.yml
+
+
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ haproxy_distro_info[ansible_facts.distribution].packages | default(haproxy_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enable services
+  become: true
+  loop: "{{ haproxy_distro_info[ansible_facts.distribution].services | default(haproxy_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service }}"
+
+
+- name: Set net.ipv4.ip_nonlocal_bind sysctl to 1
+  become: true
+  notify: haproxy_config
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    reload: true
+    state: present
+    sysctl_file: /etc/sysctl.d/10-nonlocal-bind.conf
+    value: 1
+
+
+- name: Enable more than one config file
+  become: true
+  notify: haproxy_config
+  ansible.builtin.lineinfile:
+    line: CONFIG="/etc/haproxy/conf.d"
+    path: /etc/default/haproxy
+    regexp: '^CONFIG='
+
+
+- name: Create directories
+  become: true
+  loop:
+    - /etc/haproxy/certs
+    - /etc/haproxy/conf.d
+    - /etc/haproxy/http_frontend_config
+    - /etc/haproxy/https_frontend_config
+  loop_control:
+    loop_var: directory
+  notify: haproxy_config
+  ansible.builtin.file:
+    group: root
+    mode: "0755"
+    owner: root
+    path: "{{ directory }}"
+    state: directory
+
+
+- name: Copy dhparam
+  become: true
+  notify: haproxy_config
+  ansible.builtin.copy:
+    dest: /etc/haproxy/dhparam
+    group: root
+    mode: "0644"
+    owner: root
+    src: dhparam
+
+
+- name: Write stats certificate
+  become: true
+  notify: haproxy_config
+  ansible.builtin.copy:
+    content: "{{ haproxy_stats_cert }}"
+    dest: /etc/haproxy/stats.crt
+    group: root
+    mode: "0644"
+    owner: root
+
+
+- name: Copy haproxy.cfg
+  become: true
+  notify: haproxy_config
+  ansible.builtin.template:
+    dest: /etc/haproxy/conf.d/00-haproxy.cfg
+    group: root
+    mode: "0644"
+    owner: root
+    src: haproxy.cfg.j2
+
+
+- name: Create crt-list
+  become: true
+  notify: haproxy_config
+  ansible.builtin.file:
+    group: root
+    mode: "0644"
+    owner: root
+    path: /etc/haproxy/crt-list.conf
+    state: touch
+
+
+- name: Write default certificate
+  become: true
+  notify: haproxy_config
+  when:
+    - haproxy_default_cert is defined
+  ansible.builtin.copy:
+    content: "{{ haproxy_default_cert }}"
+    dest: /etc/haproxy/default.crt
+    group: root
+    mode: "0644"
+    owner: root
+
+
+- name: Add cert info to crt-list
+  become: true
+  notify: haproxy_config
+  when:
+    - haproxy_default_cert is defined
+  ansible.builtin.lineinfile:
+    insertbefore: BOF
+    line: /etc/haproxy/default.crt [ alpn h2,http/1.1 ] !*
+    path: /etc/haproxy/crt-list.conf
+
+
+- name: Update frontends
+  ansible.builtin.import_tasks:
+    file: update_frontends.yml
+
+
+- name: Start services
+  become: true
+  loop: "{{ haproxy_distro_info[ansible_facts.distribution].services | default(haproxy_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: started
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

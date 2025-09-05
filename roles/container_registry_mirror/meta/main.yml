@@ -1,0 +1,7 @@
+---
+
+
+dependencies:
+  - role: podman
+    vars:
+      mirror_config: false

@@ -1,0 +1,42 @@
+{
+"DhcpDdns": {
+
+
+"ip-address": "127.0.0.1",
+"port": 53001,
+"control-socket": {
+    "socket-type": "unix",
+    "socket-name": "/run/kea/kea-ddns-ctrl-socket"
+},
+
+
+{% if kea_ddns_tsig_keys | length > 0 %}
+"tsig-keys":
+{{ kea_ddns_tsig_keys | to_nice_json(indent=4) }},
+{% endif %}
+
+
+{% if kea_ddns_forward_ddns_domains | length > 0 %}
+"forward-ddns": {
+    "ddns-domains":
+{{ kea_ddns_forward_ddns_domains | to_nice_json(indent=4) }}
+},
+{% endif %}
+
+
+{% if kea_ddns_reverse_ddns_domains | length > 0 %}
+"reverse-ddns": {
+    "ddns-domains":
+{{ kea_ddns_reverse_ddns_domains | to_nice_json(indent=4) }}
+},
+{% endif %}
+
+
+{% if kea_ddns_loggers | length > 0 %}
+"loggers":
+{{ kea_ddns_loggers | to_nice_json(indent=4) }}
+{% endif %}
+
+
+}
+}

@@ -1,0 +1,7 @@
+backend ceph-dashboard
+    # option httpchk GET / HTTP/1.1
+    # http-check connect default
+
+{% for host in groups[ceph_hosts_group] %}
+    server {{ host }} {{ host }}:8443 check inter {{ ceph_proxy_check_interval | default('250ms') }} verify none
+{% endfor %}

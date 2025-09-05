@@ -1,0 +1,11 @@
+---
+
+
+# dependencies:
+#   - role: keepalived
+#     tasks: create_vip.yml
+#     vars:
+#       vip:
+#         name: haproxy
+#         id: 25
+#         ip: "{{ haproxy_ipv4 }}"

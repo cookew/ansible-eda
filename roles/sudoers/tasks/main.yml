@@ -1,0 +1,26 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/community/general/sudoers_module.html
+
+
+- name: Apply Sudo Rules
+  become: true
+  loop: "{{ sudoers }}"
+  loop_control:
+    label: "{{ sudoer.name }}"
+    loop_var: sudoer
+  when:
+    - sudoers is defined
+  community.general.sudoers:
+    commands: "{{ sudoer.commands | default(omit) }}"
+    group: "{{ sudoer.group | default(omit) }}"
+    host: "{{ sudoer.host | default(omit) }}"
+    name: "{{ sudoer.name }}"
+    noexec: "{{ sudoer.noexec | default(omit) }}"
+    nopassword: "{{ sudoer.nopassword | default(omit) }}"
+    runas: "{{ sudoer.runas | default(omit) }}"
+    setenv: "{{ sudoer.setenv | default(omit) }}"
+    state: present
+    user: "{{ sudoer.user | default(omit) }}"

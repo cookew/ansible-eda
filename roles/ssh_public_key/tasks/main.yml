@@ -1,0 +1,16 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/include_tasks_module.html
+
+
+- name: Add SSH public key
+  loop: "{{ ssh_public_key }}"
+  loop_control:
+    label: "{{ public_key.user }}"
+    loop_var: public_key
+  when:
+    - ssh_public_key is defined
+  ansible.builtin.include_tasks:
+    file: ssh_public_key.yml

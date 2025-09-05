@@ -1,0 +1,17 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+
+
+- name: Adding aliases
+  become: true
+  when:
+    - home_bin is defined
+  ansible.builtin.copy:
+    content: "{{ home_bin }}"
+    dest: /etc/profile.d/zzz_home_bin.sh
+    group: root
+    mode: "0644"
+    owner: root

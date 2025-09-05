@@ -1,0 +1,63 @@
+- name: Get list of http frontend configuration files
+  become: true
+  register: http_frontend_configuration_files
+  ansible.builtin.find:
+    paths:
+      - /etc/haproxy/http_frontend_config
+    patterns:
+      - "*.cfg"
+
+
+- name: Get list of https frontend configuration files
+  become: true
+  register: https_frontend_configuration_files
+  ansible.builtin.find:
+    paths:
+      - /etc/haproxy/https_frontend_config
+    patterns:
+      - "*.cfg"
+
+
+- name: Read all http frontend configuration files
+  become: true
+  loop: "{{ http_frontend_configuration_files.files }}"
+  loop_control:
+    label: "{{ http_file.path }}"
+    loop_var: http_file
+  register: http_frontend_configuration_contents
+  ansible.builtin.slurp:
+    src: "{{ http_file.path }}"
+
+
+- name: Read all https frontend configuration files
+  become: true
+  loop: "{{ https_frontend_configuration_files.files }}"
+  loop_control:
+    label: "{{ https_file.path }}"
+    loop_var: https_file
+  register: https_frontend_configuration_contents
+  ansible.builtin.slurp:
+    src: "{{ https_file.path }}"
+
+
+- name: Get crt-list.conf info
+  become: true
+  register: crt_list_info
+  ansible.builtin.stat:
+    path: /etc/haproxy/crt-list.conf
+
+
+- name: Generate http and https frontend config
+  become: true
+  loop:
+    - haproxy_frontend_http.cfg
+    - haproxy_frontend_https.cfg
+  loop_control:
+    loop_var: file_name
+  notify: haproxy_config
+  ansible.builtin.template:
+    dest: "/etc/haproxy/conf.d/00-{{ file_name }}"
+    group: root
+    mode: "0644"
+    owner: root
+    src: "{{ file_name }}.j2"

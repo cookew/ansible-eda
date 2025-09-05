@@ -1,0 +1,33 @@
+---
+
+
+- name: DNS test
+  become: false
+  gather_facts: false
+  hosts: worker-1.cluster-1.wcooke.me
+  roles:
+    - dns
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+# - name: Create vSphere VM
+#   become: false
+#   gather_facts: false
+#   hosts: '{{ ansible_eda.event.payload.host }}'
+#   roles:
+#     - dns
+#   vars:
+#     dns_record:
+#       add_ptr: true
+#       ipv4_ptr_zone: 10.in-addr.arpa
+#       record: hello
+#       ptr_ttl: 1000
+#       ttl: 1000
+#       type: A
+#       value: 10.16.16.129
+#       zone: wcooke.me
+#   vars_files:
+#     - config.yml
+#     - private_config.yml

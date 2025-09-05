@@ -1,0 +1,17 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/copy_module.html
+
+
+- name: Adding aliases
+  become: true
+  when:
+    - shell_aliases is defined
+  ansible.builtin.copy:
+    content: "{{ shell_aliases }}"
+    dest: /etc/profile.d/zzz_aliases.sh
+    owner: root
+    group: root
+    mode: "0644"

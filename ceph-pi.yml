@@ -1,0 +1,61 @@
+- name: Add DNS entries
+  become: false
+  gather_facts: false
+  hosts: localhost
+  roles:
+    - dns
+  vars_files:
+    - config.yml
+    - private_config.yml
+  vars:
+    dns_records:
+      - record: "ceph.{{ domain_name }}."
+        type: CNAME
+        value: "services.{{ domain_name }}."
+      - record: "s3.{{ domain_name }}."
+        type: CNAME
+        value: "services.{{ domain_name }}."
+      - record: "*.s3.{{ domain_name }}."
+        type: CNAME
+        value: "services.{{ domain_name }}."
+
+
+- name: Setup host roles
+  become: true
+  gather_facts: true
+  hosts: ceph
+  roles:
+    - dns
+    - raspi_server
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+- name: Configure proxies
+  any_errors_fatal: true
+  become: true
+  gather_facts: true
+  hosts: services
+  vars_files:
+    - config.yml
+    - private_config.yml
+  tasks:
+
+
+    - name: Setup haproxy
+      ansible.builtin.include_role:
+        name: ceph
+        tasks_from: proxy.yml
+
+
+- name: Setup ceph
+  become: true
+  gather_facts: true
+  hosts: ceph
+  roles:
+    # - podman
+    - ceph
+  vars_files:
+    - config.yml
+    - private_config.yml

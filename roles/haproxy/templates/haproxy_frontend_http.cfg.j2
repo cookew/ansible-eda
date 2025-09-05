@@ -1,0 +1,10 @@
+frontend http
+    description Default HTTP frontend
+    bind :::80 v4v6
+
+{% for f in http_frontend_configuration_contents.results %}
+    # {{ f.http_file.path }}
+    {{ f.content | b64decode }}
+
+{% endfor %}
+    # redirect scheme https if !{ ssl_fc }

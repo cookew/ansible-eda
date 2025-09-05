@@ -1,0 +1,69 @@
+#cloud-config
+# https://canonical-subiquity.readthedocs-hosted.com/en/latest/reference/autoinstall-reference.html
+# https://curtin.readthedocs.io/en/latest/topics/storage.html
+autoinstall:
+  # https://git.launchpad.net/curtin/tree/examples/apt-source.yaml
+  apt:
+    fallback: abort
+    geoip: false
+    primary:
+    - arches:
+      - amd64
+      uri: http://repo.wcooke.me/deb/us.archive.ubuntu.com/ubuntu
+    security:
+    - arches:
+      - amd64
+      uri: http://repo.wcooke.me/deb/us.archive.ubuntu.com/ubuntu
+  codecs:
+    install: true
+  debconf-selections: |
+    openssh-server openssh-server/permit-root-login boolean false
+  drivers:
+    install: true
+  kernel-crash-dumps:
+    enabled: false
+  identity:
+    hostname: {{ inventory_hostname }}
+    password: $y$j9T$/aQGklHAaYMWijtejN6LO.$Of8dkS6cpKoz.VVynWcrjYtuEm.brzKXuRqRBVSqPYD
+    username: {{ ansible_user }}
+  locale: en_US.UTF-8
+#  network:
+#    ethernets:
+#      ens33:
+#        critical: true
+#        dhcp-identifier: mac
+#        dhcp4: true
+#        nameservers:
+#          addresses:
+#          - 10.16.16.31
+#    version: 2
+  oem:
+    install: auto
+  packages:
+  - open-vm-tools
+#  refresh-installer:
+#    update: true
+  shutdown: poweroff
+  source:
+    id: ubuntu-server-minimal
+    search_drivers: true
+  ssh:
+    allow-pw: false
+    authorized-keys:
+      - {{ ansible_ssh_public_key }}
+    install-server: true
+  storage:
+    layout:
+      name: lvm
+      reset-partition: true
+      sizing-policy: all
+    swap:
+      size: 0
+  timezone: America/Denver
+  updates: all
+  version: 1
+  late-commands:
+  - curtin in-target -- apt remove -y alsa* libsound* libasound* gstreamer* font* plymouth* thermald
+  - curtin in-target -- apt autoremove -y
+  - curtin in-target -- apt purge -y
+  - curtin in-target -- cloud-init clean -l --machine-id -s -c all

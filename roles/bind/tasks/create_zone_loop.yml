@@ -1,0 +1,16 @@
+- name: Create zone file
+  become: true
+  notify: rndc
+  loop: "{{ bind_catalog_zones }}"
+  loop_control:
+    label: "{{ zone.zone }}"
+    loop_var: zone
+  when:
+    - bind_is_primary_server is defined and bind_is_primary_server
+    - zone.type == "primary"
+  ansible.builtin.template:
+    dest: /var/lib/bind/zones/{{ zone.zone }}
+    group: "{{ bind_distro_info[ansible_facts.distribution].group_name }}"
+    mode: "0660"
+    owner: "{{ bind_distro_info[ansible_facts.distribution].owner_name }}"
+    src: template.primary.j2

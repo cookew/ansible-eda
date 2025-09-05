@@ -1,0 +1,126 @@
+---
+
+
+kea_distro_info:
+  Ubuntu:
+    configuration_path: /etc/kea
+    templates:
+      - dest: /etc/kea/kea-api-password
+        group: _kea
+        mode: "0640"
+        owner: root
+        src: kea-api-password
+      - dest: /etc/kea/kea-dhcp-ddns.conf
+        group: root
+        mode: "0644"
+        owner: root
+        src: kea-dhcp-ddns.conf
+      - dest: /etc/kea/kea-ctrl-agent.conf
+        group: root
+        mode: "0644"
+        owner: root
+        src: kea-ctrl-agent.conf
+      - dest: /etc/kea/kea-dhcp4.conf
+        group: root
+        mode: "0644"
+        owner: root
+        src: kea-dhcp4.conf
+      # - dest: /etc/kea/kea-dhcp6.conf
+      #   group: root
+      #   mode: "0644"
+      #   owner: root
+      #   src: kea-dhcp6.conf
+    packages:
+      - kea
+    services:
+      - name: kea-ctrl-agent.service
+      - name: kea-dhcp-ddns-server.service
+      - name: kea-dhcp4-server.service
+      - name: kea-dhcp6-server.service
+        enable: false
+        start: false
+        stop: true
+
+
+kea_family_info:
+
+
+# kea_api_password:
+
+
+kea_control_agent_port: 8000
+
+
+kea_ha_servers: []
+  # - name:
+  #   ip:
+
+
+kea_high_availability_port: 8001
+
+
+kea_dhcp4_interfaces:
+  - "*"
+
+
+kea_dhcp4_option_data: []
+
+
+kea_dhcp4_client_classes: []
+
+
+kea_dhcp4_hooks_libraries: []
+
+
+kea_dhcp4_subnet4: []
+
+
+kea_dhcp4_loggers:
+  - name: kea-dhcp4
+    output_options:
+      - output: stdout
+        pattern: "%-5p %m\n"
+    severity: INFO
+    debuglevel: 0
+
+
+kea_ddns_tsig_keys: []
+  # - name: ddns
+  #   algorithm: hmac-sha256
+  #   secret:
+
+
+kea_ddns_forward_ddns_domains:
+  - name: home.me
+    key-name: dhcp_dynamic_dns
+    dns-servers:
+      - ip-address: 127.0.0.1
+
+
+kea_ddns_reverse_ddns_domains:
+  - name: 10.in-addr.arpa.
+    key-name: dhcp_dynamic_dns
+    dns-servers:
+      - ip-address: 127.0.0.1
+  - name: 168.192.in-addr.arpa.
+    key-name: dhcp_dynamic_dns
+    dns-servers:
+      - ip-address: 127.0.0.1
+
+
+kea_ddns_loggers:
+  - name: kea-dhcp4
+    output_options:
+      - output: stdout
+        pattern: "%-5p %m\n"
+    severity: INFO
+    debuglevel: 0
+
+
+kea_ctrl_loggers:
+  - name: kea-dhcp4
+    output_options:
+      - output: stdout
+        pattern: "%-5p %m\n"
+    severity: INFO
+    debuglevel: 0

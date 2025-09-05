@@ -1,0 +1,20 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/community/general/ini_file_module.html
+
+
+- name: Enabling systemd-journald compression
+  become: true
+  community.general.ini_file:
+    group: root
+    mode: "0644"
+    modify_inactive_option: true
+    no_extra_spaces: true
+    option: Compress
+    owner: root
+    path: /etc/systemd/journald.conf
+    section: Journal
+    state: present
+    value: "yes"

@@ -1,0 +1,15 @@
+{% if not mirror_config is defined or (mirror_config is defined and mirror_config) %}
+{% for container_registry_mirror in container_registry_mirrors %}
+[[registry]]
+prefix = "{{ container_registry_mirror.prefix }}"
+insecure = false
+blocked = false
+location = "{{ container_registry_mirror.url }}"
+{% for services_server in services_servers %}
+
+[[registry.mirror]]
+location = "{{ services_server.hostname }}:{{ container_registry_mirror.port }}"
+{% endfor %}
+
+{% endfor %}
+{% endif %}

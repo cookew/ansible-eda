@@ -1,0 +1,32 @@
+- name: Setup services Pi
+  become: true
+  gather_facts: true
+#  hosts: "{{ ansible_eda.event.payload.host }}"
+  hosts: laptop-rocky-9.wcooke.me
+  roles:
+    - ca_certs
+    # - local_repos
+    - aliases
+    - autofs
+    - firefox
+    # - fstrim
+    - google_chrome
+    - home_bin
+    - insecure
+    - logoff_timeout
+    - logrotate
+    - motd
+    - networkmanager
+    - open_vm_tools
+    - ps1_color
+    - ssh_public_key
+    - subscription_manager
+    - sudoers
+    - systemd_journald
+    - systemd_resolved
+    - vim
+
+    - podman
+  vars_files:
+    - config.yml
+    - private_config.yml

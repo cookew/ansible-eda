@@ -1,0 +1,72 @@
+- name: Add cert
+  become: true
+  loop: "{{ proxy }}"
+  loop_control:
+    label: "{{ p.name }}"
+    loop_var: p
+  notify: haproxy_reload
+  when:
+    - p.cert is defined
+  ansible.builtin.copy:
+    content: "{{ p.cert }}"
+    dest: "/etc/haproxy/certs/{{ p.name }}.crt"
+    group: root
+    mode: "0644"
+    owner: root
+
+
+- name: Add cert info to crt-list
+  become: true
+  loop: "{{ proxy }}"
+  loop_control:
+    label: "{{ p.name }}"
+    loop_var: p
+  notify: haproxy_reload
+  when:
+    - p.cert is defined
+  ansible.builtin.lineinfile:
+    line: "/etc/haproxy/certs/{{ p.name }}.crt {{ '[' + p.alpn + ']' if p.apln is defined }} {{ p.sni if p.sni is defined }}"
+    path: /etc/haproxy/crt-list.conf
+
+
+- name: Add http frontend config
+  become: true
+  loop: "{{ proxy }}"
+  loop_control:
+    label: "{{ p.name }}"
+    loop_var: p
+  notify: haproxy_reload
+  when:
+    - p.http_frontend_config is defined
+  ansible.builtin.copy:
+    content: "{{ p.http_frontend_config }}"
+    dest: "/etc/haproxy/http_frontend_config/{{ p.name }}.cfg"
+    group: root
+    mode: "0644"
+    owner: root
+
+
+- name: Add https frontend config
+  become: true
+  loop: "{{ proxy }}"
+  loop_control:
+    label: "{{ p.name }}"
+    loop_var: p
+  notify: haproxy_reload
+  when:
+    - p.https_frontend_config is defined
+  ansible.builtin.copy:
+    content: "{{ p.https_frontend_config }}"
+    dest: "/etc/haproxy/https_frontend_config/{{ p.name }}.cfg"
+    group: root
+    mode: "0644"
+    owner: root
+
+
+- name: Update frontends
+  ansible.builtin.import_tasks:
+    file: update_frontends.yml
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

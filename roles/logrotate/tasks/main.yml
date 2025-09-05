@@ -1,0 +1,27 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/package_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/replace_module.html
+
+
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ logrotate_distro_info[ansible_facts.distribution].packages | default(logrotate_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enabling logratate compression
+  ansible.builtin.replace:
+    path: /etc/logrotate.conf
+    regexp: '^#compress$'
+    replace: 'compress'
+
+
+- name: Enabling logrotate dates as extensions
+  ansible.builtin.replace:
+    path: /etc/logrotate.conf
+    regexp: '^#dateext$'
+    replace: 'dateext'

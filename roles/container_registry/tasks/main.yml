@@ -1,0 +1,69 @@
+- name: Create certificate directory
+  become: true
+  ansible.builtin.file:
+    group: root
+    mode: "0755"
+    owner: root
+    path: /etc/registry
+    state: directory
+
+
+- name: Create certificates
+  become: true
+  loop:
+    - name: tls.crt
+      cert: "{{ container_registry_certs.tls_crt }}"
+    - name: tls.key
+      cert: "{{ container_registry_certs.tls_key }}"
+  loop_control:
+    label: "{{ cert.name }}"
+    loop_var: cert
+  ansible.builtin.copy:
+    content: "{{ cert.cert }}"
+    dest: "/etc/registry/{{ cert.name }}"
+    group: root
+    mode: "0644"
+    owner: "{{ ansible_user }}"
+
+
+- name: Create registry storage directory
+  become: true
+  ansible.builtin.file:
+    group: "{{ ansible_user }}"
+    mode: "0700"
+    owner: "{{ ansible_user }}"
+    path: /var/lib/registry
+    state: directory
+
+
+- name: Run container registry
+  become: false
+  containers.podman.podman_container:
+    cpus: 1.0
+    detach: true
+    env:
+      REGISTRY_HTTP_HEADERS_X-Content-Type-Options_0: "nosniff"
+      REGISTRY_HTTP_HTTP2_DISABLED: false
+      REGISTRY_HTTP_SECRET: containerregistrymirror
+      REGISTRY_HTTP_TLS_CERTIFICATE: /certs/tls.crt
+      REGISTRY_HTTP_TLS_KEY: /certs/tls.key
+      REGISTRY_STORAGE_FILESYSTEM_ROOTDIRECTORY: /var/lib/registry
+    image: docker.io/library/registry:2.8.3
+    image_strict: true
+    image_volume: ignore
+    # memory: 256m
+    name: registry
+    publish:
+      - 5000:5000/tcp
+    pull: missing
+    read_only: true
+    read_only_tmpfs: true
+    restart_policy: always
+    shm_size: 8m
+    shm_size_systemd: 8m
+    state: started
+    timezone: local
+    tls_verify: true
+    volume:
+      - /var/lib/registry:/var/lib/registry
+      - /etc/registry:/certs

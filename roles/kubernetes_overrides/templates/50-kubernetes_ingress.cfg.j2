@@ -1,0 +1,9 @@
+backend kubernetes-ingress
+    # option httpchk GET /healthz HTTP/1.1
+    # http-check connect default
+
+    default-server ssl alpn h2,http/1.1 check check-ssl inter {{ kubernetes_worker_check_interval | default('250ms') }} verify none
+
+{% for host in groups['kubernetes'] %}
+    server {{ host }} {{ host }}:443
+{% endfor %}

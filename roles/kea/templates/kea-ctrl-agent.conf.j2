@@ -1,0 +1,48 @@
+{
+
+"Control-agent": {
+    "http-host": "0.0.0.0",
+    "http-port": {{ kea_control_agent_port }},
+    "authentication": {
+        "type": "basic",
+        "realm": "Kea Control Agent",
+        "directory": "/etc/kea",
+        "clients": [
+            {
+                "user": "kea-api",
+                "password-file": "kea-api-password"
+            }
+        ]
+    },
+    "control-sockets": {
+        "dhcp4": {
+            "socket-type": "unix",
+            "socket-name": "/run/kea/kea4-ctrl-socket"
+        },
+        "dhcp6": {
+            "socket-type": "unix",
+            "socket-name": "/run/kea/kea6-ctrl-socket"
+        },
+        "d2": {
+            "socket-type": "unix",
+            "socket-name": "/run/kea/kea-ddns-ctrl-socket"
+        }
+    },
+    "hooks-libraries": [
+//  {
+//      "library": "/usr/lib/aarch64-linux-gnu/kea/hooks/control-agent-commands.so",
+//      "parameters": {
+//          "param1": "foo"
+//      }
+//  }
+    ],
+
+
+{% if kea_ddns_loggers | length > 0 %}
+"loggers":
+{{ kea_ddns_loggers | to_nice_json(indent=4) }}
+{% endif %}
+
+
+}
+}

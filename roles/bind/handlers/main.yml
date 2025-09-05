@@ -1,0 +1,123 @@
+- name: Reload bind
+  become: true
+  listen: bind_config
+  loop: "{{ bind_distro_info[ansible_facts.distribution].services | default(bind_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: reloaded
+
+
+- name: Dump list of zones
+  become: true
+  changed_when: none
+  listen: rndc
+  ansible.builtin.command:
+    cmd: rndc dumpdb -zones
+
+
+- name: Lookup zones in dump list
+  become: true
+  check_mode: true
+  listen: rndc
+  register: zone_dump
+  loop: "{{ zones_updated.results }}"
+  loop_control:
+    label: "{{ results_zone.zone.zone }}"
+    loop_var: results_zone
+  when:
+    - results_zone.changed
+  ansible.builtin.lineinfile:
+    path: /var/lib/bind/named_dump.db
+    line: "; Zone dump of '{{ results_zone.zone.zone }}/IN'"
+
+
+- name: Remove zone from catalog
+  become: false
+  listen: rndc
+  loop: "{{ zone_dump.results }}"
+  loop_control:
+    label: "{{  zone_reload.results_zone.zone.zone }}"
+    loop_var: zone_reload
+  when:
+    - not zone_reload.changed
+  community.general.nsupdate:
+    key_algorithm: "{{ bind_keys.ansible.algorithm }}"
+    key_name: ansible
+    key_secret: "{{ bind_keys.ansible.secret }}"
+    record: "{{ zone_reload.results_zone.zone.zone | hash('sha1') }}.zones.catalog.catalog."
+    server: "{{ bind_primary_server_ipv4 | default(bind_primary_server_ipv6) }}"
+    state: absent
+    type: PTR
+    value: "{{ zone_reload.results_zone.zone.zone }}."
+    zone: catalog.catalog
+
+
+- name: Delete existing zones
+  become: true
+  changed_when: true
+  listen: rndc
+  loop: "{{ zone_dump.results }}"
+  loop_control:
+    label: "{{  zone_reload.results_zone.zone.zone }}"
+    loop_var: zone_reload
+  register: rndc_delete_reload
+  when:
+    - not zone_reload.changed
+  ansible.builtin.command:
+    cmd: "rndc delzone {{ zone_reload.results_zone.zone.zone }}"
+
+
+- name: Reload server
+  become: true
+  changed_when: true
+  listen: rndc
+  loop: "{{ rndc_delete_reload.results }}"
+  loop_control:
+    label: "{{  server_reload.zone_reload.results_zone.zone.zone }}"
+    loop_var: server_reload
+  run_once: true
+  when:
+    - server_reload.changed
+  ansible.builtin.command:
+    cmd: rndc reload
+
+
+- name: Add zones
+  become: true
+  changed_when: true
+  listen: rndc
+  loop: "{{ zones_updated.results }}"
+  loop_control:
+    label: "{{ zone_add.zone.zone }}"
+    loop_var: zone_add
+  when:
+    - zone_add.changed
+  ansible.builtin.command:
+    # yamllint disable-line rule:line-length
+    cmd: "rndc addzone {{ zone_add.zone.zone }} '{ type primary; file \"zones/{{ zone_add.zone.zone }}\"; allow-transfer { xfer; }; forwarders { }; notify yes; update-policy { grant ansible zonesub ANY; {% if zone_add.update_policies is defined %}{%- for update_policy in zone_add.update_policies %} {{ update_policy }};{% endfor %}{% endif %} }; };'"
+
+
+- name: Add zone to catalog
+  become: false
+  debugger: on_failed
+  delegate_to: localhost
+  listen: rndc
+  loop: "{{ zones_updated.results }}"
+  loop_control:
+    label: "{{ zone_add.zone.zone }}"
+    loop_var: zone_add
+  when:
+    - zone_add.changed
+  community.general.nsupdate:
+    key_algorithm: "{{ bind_keys.ansible.algorithm }}"
+    key_name: ansible
+    key_secret: "{{ bind_keys.ansible.secret }}"
+    record: "{{ zone_add.zone.zone | hash('sha1') }}.zones.catalog.catalog."
+    server: "{{ bind_primary_server_ipv4 | default(bind_primary_server_ipv6) }}"
+    state: present
+    ttl: 60
+    type: PTR
+    value: "{{ zone_add.zone.zone }}."
+    zone: catalog.catalog

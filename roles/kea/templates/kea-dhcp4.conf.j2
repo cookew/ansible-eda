@@ -1,0 +1,70 @@
+{
+"Dhcp4": {
+    "interfaces-config": {
+        "interfaces":
+        {{ kea_dhcp4_interfaces | to_nice_json(indent=4) }}
+
+    },
+
+    "control-socket": {
+        "socket-type": "unix",
+        "socket-name": "/run/kea/kea4-ctrl-socket"
+    },
+
+    "lease-database": {
+        "type": "memfile",
+        "lfc-interval": 3600
+    },
+
+    "expired-leases-processing": {
+        "reclaim-timer-wait-time": 10,
+        "flush-reclaimed-timer-wait-time": 25,
+        "hold-reclaimed-time": 3600,
+        "max-reclaim-leases": 100,
+        "max-reclaim-time": 250,
+        "unwarned-reclaim-cycles": 5
+    },
+
+    "renew-timer": 900,
+    "rebind-timer": 1800,
+    "valid-lifetime": 3600,
+
+    "dhcp-ddns": {
+        "enable-updates": true
+    },
+    "ddns-qualifying-suffix": "{{ domain_name }}",
+    "ddns-override-client-update": true,
+
+
+{% if kea_dhcp4_option_data | length > 0 %}
+"option-data":
+{{ kea_dhcp4_option_data | to_nice_json(indent=4) }},
+{% endif %}
+
+
+{% if kea_dhcp4_client_classes | length > 0 %}
+"client-classes":
+{{ kea_dhcp4_client_classes | to_nice_json(indent=4) }},
+{% endif %}
+
+
+{% if kea_dhcp4_hooks_libraries | length > 0 %}
+"hooks-libraries":
+{{ kea_dhcp4_hooks_libraries | to_nice_json(indent=4) }},
+{% endif %}
+
+
+{% if kea_dhcp4_subnet4 | length > 0 %}
+"subnet4":
+{{ kea_dhcp4_subnet4 | to_nice_json(indent=4) }},
+{% endif %}
+
+
+{% if kea_dhcp4_loggers | length > 0 %}
+"loggers":
+{{ kea_dhcp4_loggers | to_nice_json(indent=4) }}
+{% endif %}
+
+
+}
+}

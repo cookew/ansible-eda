@@ -1,0 +1,81 @@
+---
+
+
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ chrony_distro_info[ansible_facts.distribution].packages | default(chrony_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+
+- name: Enable services
+  become: true
+  loop: "{{ chrony_distro_info[ansible_facts.distribution].services | default(chrony_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service }}"
+
+
+- name: Start services
+  become: true
+  loop: "{{ chrony_distro_info[ansible_facts.distribution].services | default(chrony_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: started
+
+
+- name: Get service facts
+  become: true
+  ansible.builtin.service_facts:
+
+
+- name: Enable Firewalld ports
+  become: true
+  loop:
+    - 123/udp
+  loop_control:
+    loop_var: port
+  when:
+    - '"firewalld.service" in ansible_facts["services"]'
+  ansible.posix.firewalld:
+    immediate: true
+    permanent: true
+    port: "{{ port }}"
+    state: enabled
+
+
+- name: Enable UFW ports
+  become: true
+  loop:
+    - 123/udp
+  loop_control:
+    loop_var: port
+  when:
+    - '"ufw.service" in ansible_facts["services"]'
+  community.general.ufw:
+    port: "{{ port | split('/') | first }}"
+    proto: "{{ port | split('/') | last }}"
+    rule: allow
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers
+
+
+- name: Copy configuration file
+  become: true
+  notify: chrony_config
+  ansible.builtin.template:
+    dest: "{{ chrony_distro_info[ansible_facts.distribution].chrony_conf_path | default(chrony_family_info[ansible_facts.os_family].chrony_conf_path) }}"
+    group: "{{ chrony_distro_info[ansible_facts.distribution].chrony_conf_group | default(chrony_family_info[ansible_facts.os_family].chrony_conf_group) }}"
+    mode: "{{ chrony_distro_info[ansible_facts.distribution].chrony_conf_mode | default(chrony_family_info[ansible_facts.os_family].chrony_conf_mode) }}"
+    owner: "{{ chrony_distro_info[ansible_facts.distribution].chrony_conf_owner | default(chrony_family_info[ansible_facts.os_family].chrony_conf_owner) }}"
+    src: "chrony.conf.j2"
+
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

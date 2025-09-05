@@ -1,0 +1,60 @@
+---
+
+
+# Module documentation
+# https://docs.ansible.com/ansible/latest/collections/community/general/ini_file_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/package_facts_module.html
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/systemd_service_module.html
+
+
+- name: Get service status
+  ansible.builtin.service_facts:
+
+
+- name: Add NetworkManager interface excemptions
+  become: true
+  when:
+    - ansible_facts.os_family == "RedHat"
+    - "'NetworkManager.service.service' in ansible_facts.services"
+    - ansible_facts.services["NetworkManager.service"].status == "enabled"
+    - ansible_facts.services["NetworkManager.service"].state == "running"
+  block:
+
+
+    - name: "Enabling keyfile configuration for NetworkManager"
+      register: networkmanager_plugins
+      community.general.ini_file:
+        group: root
+        mode: "0644"
+        modify_inactive_option: false
+        no_extra_spaces: true
+        option: plugins
+        owner: root
+        path: /etc/NetworkManager/NetworkManager.conf
+        section: main
+        state: present
+        value: keyfile
+
+
+    - name: Exluding interfaces from NetworkManager management
+      register: networkmanager_keyfile
+      community.general.ini_file:
+        group: root
+        mode: "0644"
+        modify_inactive_option: false
+        no_extra_spaces: true
+        option: unmanaged
+        owner: root
+        path: /etc/NetworkManager/NetworkManager.conf
+        section: keyfile
+        state: present
+        value: "antrea-*,cali*,cilium*,lxc*,ovs-system,flannel*,veth*,docker*,virbr*,vxlan_sys_*,genev_sys_*,gre_sys_*,stt_sys_*,????????-??????"
+
+
+    - name: Reload NetworkManager service
+      when:
+        - networkmanager_plugins.changed or
+          networkmanager_keyfile.changed
+      ansible.builtin.systemd_service:
+        name: NetworkManager.service
+        state: reloaded
