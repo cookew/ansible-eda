@@ -5,6 +5,13 @@
 # https://docs.ansible.com/ansible/latest/collections/community/general/sudoers_module.html
 
 
+- name: Remove sudo-rs
+  become: true
+  ansible.builtin.package:
+    name: sudo-rs
+    state: absent
+
+
 - name: Apply Sudo Rules
   become: true
   loop: "{{ sudoers }}"

@@ -13,8 +13,8 @@
 #     - dns
 #    - haproxy
 #     - autofs
-    # - tftp
-    - repo
+    - tftp
+    # - repo
   vars_files:
     - config.yml
     - private_config.yml

@@ -3,7 +3,7 @@ listen kubernetes-control
     bind :6443
     option tcplog
 
-    option httpchk GET /healthz HTTP/1.1
+    option httpchk GET /readyz HTTP/1.1
     http-check connect port 6443 ssl alpn h2,http/1.1
 
 {% for host in groups['control_planes'] %}

@@ -11,7 +11,8 @@
   become: true
   gather_facts: true
   # hosts: "{{ ansible_eda.event.payload.host | default(omit) }}"
-  hosts: ceph
+  hosts: control_planes
+#  hosts: worker-[3:4].iaas.wcooke.me
   roles:
     - ca_certs
     - local_repos

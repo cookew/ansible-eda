@@ -29,32 +29,32 @@
 #     - private_config.yml
 
 
-- name: Configure the proxies
-  any_errors_fatal: true
-  become: true
-  gather_facts: true
-  hosts: svc-[1-2].wcooke.me
-  vars_files:
-    - config.yml
-    - private_config.yml
-  tasks:
+# - name: Configure the proxies
+#   any_errors_fatal: true
+#   become: true
+#   gather_facts: true
+#   hosts: svc-[1-2].wcooke.me
+#   vars_files:
+#     - config.yml
+#     - private_config.yml
+#   tasks:
 
 
-    - name: Setup haproxy
-      ansible.builtin.include_role:
-        name: kubernetes_overrides
-        tasks_from: proxy.yml
+#     - name: Setup haproxy
+#       ansible.builtin.include_role:
+#         name: kubernetes_overrides
+#         tasks_from: proxy.yml
 
 
-    - name: Setup keepalived
-      vars:
-        vip:
-          name: kubernetes_control
-          id: 50
-          ip: "{{ kubernetes_control_plane_ip }}"
-      ansible.builtin.include_role:
-        name: keepalived
-        tasks_from: create_vip.yml
+#     - name: Setup keepalived
+#       vars:
+#         vip:
+#           name: kubernetes_control
+#           id: 50
+#           ip: "{{ kubernetes_control_plane_ip }}"
+#       ansible.builtin.include_role:
+#         name: keepalived
+#         tasks_from: create_vip.yml
 
 
 - name: Install containerd.io
@@ -78,6 +78,18 @@
   roles:
     - kubernetes-defaults
     - kubernetes
+  vars_files:
+    - config.yml
+    - private_config.yml
+
+
+- name: Pre control plane hooks
+  hosts: control_planes
+  any_errors_fatal: true
+  become: true
+  roles:
+  - role: kubernetes-defaults
+  - role: pre-kubernetes-control-plane
   vars_files:
     - config.yml
     - private_config.yml
@@ -118,10 +130,18 @@
   roles:
     - kubernetes-defaults
     - kubernetes-worker
-    - post-kubernetes-worker
   vars_files:
     - config.yml
     - private_config.yml
+
+
+- name: Post worker node hooks
+  hosts: worker_nodes
+  any_errors_fatal: true
+  become: true
+  roles:
+  - kubernetes-defaults
+  - post-kubernetes-worker
 
 
 - name: Copy kube admin file

@@ -98,10 +98,10 @@
   containers.podman.podman_container:
     cpus: 0.25
     detach: true
-    image: docker.io/library/nginx:1.27.5
+    image: docker.io/library/nginx:1.28.0
     image_strict: true
     image_volume: ignore
-    memory: 32m
+    # memory: 32m
     name: ipxe
     publish:
       - 8002:80/tcp
