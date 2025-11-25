@@ -1,0 +1,130 @@
+- name: Create alloy user and group
+  become: true
+  ansible.builtin.user:
+    create_home: false
+    groups: "{{ alloy_user_groups }}"
+    home: /var/lib/alloy
+    name: alloy
+    shell: /usr/sbin/nologin
+    state: present
+    system: true
+
+- name: Create alloy storage directory
+  become: true
+  ansible.builtin.file:
+    group: alloy
+    mode: '0700'
+    owner: alloy
+    path: /var/lib/alloy
+    state: directory
+
+- name: Create /etc/alloy configuration directory
+  become: true
+  ansible.builtin.file:
+    group: alloy
+    mode: '0700'
+    owner: alloy
+    path: /etc/alloy
+    state: directory
+
+- name: Copy alloy configuration files
+  become: true
+  loop:
+    - dest: /etc/default/alloy
+      group: root
+      mode: '0644'
+      owner: root
+      src: alloy.j2
+    - dest: /etc/systemd/system/alloy.service
+      group: root
+      mode: '0644'
+      owner: root
+      src: alloy.service.j2
+    - dest: /etc/alloy/alloy.alloy
+      src: alloy.alloy.j2
+    - dest: /etc/alloy/logs.alloy
+      src: logs.alloy.j2
+    - dest: /etc/alloy/metrics.alloy
+      src: metrics.alloy.j2
+    - dest: /etc/alloy/output.alloy
+      src: output.alloy.j2
+  loop_control:
+    loop_var: file_item
+  ansible.builtin.template:
+    dest: "{{ file_item.dest }}"
+    group: "{{ file_group | default('alloy') }}"
+    mode: "{{ file_item.mode | default('0600') }}"
+    owner: "{{ file_owner | default('alloy') }}"
+    src: "{{ file_item.src }}"
+
+- name: Set a variable with the architecture
+  ansible.builtin.set_fact:
+    # yamllint disable-line rule:line-length
+    alloy_arch: "{{ 'amd64' if ansible_facts['architecture'] == 'x86_64' else ('arm64' if ansible_facts['architecture'] == 'aarch64' else 'unsupported') }}"
+
+- name: Fail if architecture is unsupported
+  when: alloy_arch == 'unsupported'
+  ansible.builtin.fail:
+    msg: "Unsupported architecture: {{ ansible_facts['architecture'] }}"
+
+- name: Create temporary directory
+  become: true
+  loop:
+    - /tmp/alloy
+    - /tmp/alloy/extracted
+  loop_control:
+    loop_var: temp_dir
+  ansible.builtin.file:
+    dest: "{{ temp_dir }}"
+    group: root
+    mode: '0755'
+    owner: root
+    state: directory
+
+- name: Download alloy binary
+  become: true
+  ansible.builtin.get_url:
+    dest: /tmp/alloy/{{ alloy_binary + '-linux-' + alloy_arch + '.zip' }}
+    # yamllint disable-line rule:line-length
+    url: "{{ 'https://github.com/grafana/alloy/releases/latest/download/' + alloy_binary + '-linux-' + alloy_arch + '.zip' if alloy_version == 'latest' else 'https://github.com/grafana/alloy/releases/download/' + alloy_version + '/' + alloy_binary + '-linux-' + alloy_arch + '.zip' }}"
+    mode: '0644'
+
+- name: Install unzip
+  become: true
+  ansible.builtin.package:
+    name: unzip
+    state: present
+
+- name: Unzip alloy binary
+  become: true
+  ansible.builtin.unarchive:
+    dest: /tmp/alloy/extracted
+    group: root
+    mode: '0755'
+    owner: root
+    remote_src: true
+    src: /tmp/alloy/{{ alloy_binary + '-linux-' + alloy_arch + '.zip' }}
+
+- name: Copy alloy binary to /usr/bin
+  become: true
+  ansible.builtin.copy:
+    dest: /usr/bin/alloy
+    group: alloy
+    mode: '0755'
+    owner: alloy
+    remote_src: true
+    src: /tmp/alloy/extracted/{{ alloy_binary + '-linux-' + alloy_arch }}
+
+- name: Remove temporary directory
+  become: true
+  ansible.builtin.file:
+    dest: /tmp/alloy
+    state: absent
+
+- name: Enable and start the alloy service
+  become: true
+  ansible.builtin.systemd:
+    daemon_reload: true
+    enabled: true
+    name: alloy
+    state: restarted

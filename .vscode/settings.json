@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "**/roles/defaults/*.yml": "yaml",
+        "**/roles/defaults/*.yaml": "yaml",
+        "**/roles/handlers/*.yml": "ansible",
+        "**/roles/handlers/*.yaml": "ansible",
+        "**/roles/tasks/*.yml": "ansible",
+        "**/roles/tasks/*.yaml": "ansible",
+        "**/roles/templates/*.j2": "ansible-jinja"
+    }
+}

@@ -1,0 +1,25 @@
+// Batch
+otelcol.processor.batch "default" {
+  output {
+    logs    = [otelcol.exporter.otlphttp.default.input]
+    metrics = [otelcol.exporter.otlphttp.default.input]
+    traces  = [otelcol.exporter.otlphttp.default.input]
+  }
+}
+
+// Authenticate the client
+otelcol.auth.basic "client" {
+  password = "{{ alloy_server_password_b64 | b64decode }}"
+  username = "{{ alloy_server_username }}"
+}
+
+// Send the data
+otelcol.exporter.otlphttp "default" {
+  client {
+    auth = otelcol.auth.basic.client.handler
+    endpoint = "{{ alloy_endpoint }}"
+    tls {
+      insecure_skip_verify = true
+    }
+  }
+}

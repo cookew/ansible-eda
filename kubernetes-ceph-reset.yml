@@ -1,108 +1,103 @@
 - name: Ceph Cleanup
   become: true
-#  hosts: iaas_mgmt
-  hosts: control-3.iaas.wcooke.me
+  hosts: worker-7.iaas.wcooke.me
   tasks:
 
 
-  # - name: Remove files and directories
-  #   become: true
-  #   loop:
-  #   - /var/lib/rook
-  #   when:
-  #   - ceph_disks is defined
-  #   loop_control:
-  #     loop_var: file
-  #   ansible.builtin.file:
-  #     path: "{{ file }}"
-  #     state: absent
+    - name: Remove files and directories
+      become: true
+      loop:
+        - /var/lib/rook
+      loop_control:
+        loop_var: file
+      ansible.builtin.file:
+        path: "{{ file }}"
+        state: absent
 
 
-  - name: Clear the partition table
-    become: true
-    changed_when: true
-    failed_when: false
-    loop: "{{ ceph_disks }}"
-    loop_control:
-      loop_var: disk
-    when:
-    - ceph_disks is defined
-    ansible.builtin.command:
-      cmd: "dd if=/dev/zero of={{ disk }} bs=16M count=128 oflag=direct,dsync"
+    - name: Clear the partition table
+      become: true
+      changed_when: true
+      failed_when: false
+      loop: "{{ ceph_disks }}"
+      loop_control:
+        loop_var: disk
+      when:
+        - ceph_disks is defined
+      ansible.builtin.command:
+        cmd: "dd if=/dev/zero of={{ disk }} bs=16M count=128 oflag=direct,dsync"
 
 
-  - name: Discard the content of sectors on a device
-    become: true
-    changed_when: true
-    failed_when: false
-    loop: "{{ ceph_disks }}"
-    loop_control:
-      loop_var: disk
-    when:
-    - ceph_disks is defined
-    ansible.builtin.command:
-      cmd: "blkdiscard {{ disk }}"
+    - name: Discard the contents of sectors on a device
+      become: true
+      changed_when: true
+      failed_when: false
+      loop: "{{ ceph_disks }}"
+      loop_control:
+        loop_var: disk
+      when:
+        - ceph_disks is defined
+      ansible.builtin.command:
+        cmd: "blkdiscard {{ disk }}"
 
 
-  # - name: Rescan the partition table
-  #   become: true
-  #   changed_when: true
-  #   failed_when: false
-  #   loop: "{{ ceph_disks }}"
-  #   loop_control:
-  #     loop_var: disk
-  #   when:
-  #   - ceph_disks is defined
-  #   ansible.builtin.command:
-  #     cmd: "partprobe {{ disk }}"
+    # - name: Rescan the partition table
+    #   become: true
+    #   changed_when: true
+    #   failed_when: false
+    #   loop: "{{ ceph_disks }}"
+    #   loop_control:
+    #     loop_var: disk
+    #   when:
+    #     - ceph_disks is defined
+    #   ansible.builtin.command:
+    #     cmd: "partprobe {{ disk }}"
 
 
-  # - name: Find /dev/mapper/ceph-* files
-  #   register: dev_mapper_ceph_files
-  #   ansible.builtin.find:
-  #     paths:
-  #     - /dev/mapper/ceph
-  #     patterns: "ceph-*"
+    # - name: Find /dev/mapper/ceph-* files
+    #   register: dev_mapper_ceph_files
+    #   ansible.builtin.find:
+    #     paths:
+    #       - /dev/mapper/ceph
+    #     patterns: "ceph-*"
 
 
-  # - name: Remove DM mappings
-  #   become: true
-  #   changed_when: true
-  #   loop: "{{ dev_ceph_files.files }}"
-  #   loop_control:
-  #     loop_var: dev_ceph_file
-  #   when:
-  #   - dev_ceph_files.files is defined
-  #   ansible.builtin.command:
-  #     cmd: "dmsetup remove {{ dev_mapper_ceph_file }}"
+    # - name: Remove DM mappings
+    #   become: true
+    #   changed_when: true
+    #   loop: "{{ dev_ceph_files.files }}"
+    #   loop_control:
+    #     loop_var: dev_ceph_file
+    #   when:
+    #     - dev_ceph_files.files is defined
+    #   ansible.builtin.command:
+    #     cmd: "dmsetup remove {{ dev_mapper_ceph_file }}"
 
 
-  # - name: Find ceph-* files in /dev to delete
-  #   register: dev_ceph_files
-  #   ansible.builtin.find:
-  #     paths:
-  #     - /dev
-  #     - /dev/mapper/ceph
-  #     patterns: "ceph-*"
+    # - name: Find ceph-* files in /dev to delete
+    #   register: dev_ceph_files
+    #   ansible.builtin.find:
+    #     paths:
+    #       - /dev
+    #       - /dev/mapper/ceph
+    #     patterns: "ceph-*"
 
 
-  # - name: Remove some dev files
-  #   become: true
-  #   loop: "{{ dev_ceph_files.files }}"
-  #   loop_control:
-  #     loop_var: dev_ceph_file
-  #   when:
-  #   - dev_ceph_files.files is defined
-  #   ansible.builtin.file:
-  #     path: "{{ dev_ceph_file }}"
-  #     state: absent
+    # - name: Remove some dev files
+    #   become: true
+    #   loop: "{{ dev_ceph_files.files }}"
+    #   loop_control:
+    #     loop_var: dev_ceph_file
+    #   when:
+    #     - dev_ceph_files.files is defined
+    #   ansible.builtin.file:
+    #     path: "{{ dev_ceph_file }}"
+    #     state: absent
 
 
-  # - name: Reboot
-  #   become: true
-  #   when:
-  #   - ceph_disks is defined
-  #   ansible.builtin.reboot:
-  #     connect_timeout: 300
-  #     msg: Rebooting
-  #     reboot_timeout: 300
+    - name: Reboot
+      become: true
+      ansible.builtin.reboot:
+        connect_timeout: 300
+        msg: Rebooting
+        reboot_timeout: 300

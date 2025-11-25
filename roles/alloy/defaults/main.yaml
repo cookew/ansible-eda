@@ -1,0 +1,33 @@
+# The version of alloy to install.
+# Use 'latest' to install the latest version.
+#
+# The version must match an available binary on the alloy releases page.
+# An example version is 'v1.11.3', include the 'v' prefix.
+alloy_version: v1.11.3
+
+# This is the name of the alloy binary to download.
+# -linux-<arch>.zip will be appended to this.
+# Look on the alloy releases page for available binaries.
+# https://github.com/grafana/alloy/releases
+alloy_binary: alloy-boringcrypto
+
+# The username for the alloy http server
+alloy_http_username:
+
+# The base64 encoded password for the alloy http server
+alloy_http_server_password_b64:
+
+# The username for the otel server this alloy will connect to
+alloy_server_username:
+
+# The base64 encoded password for the otel server this alloy will connect to
+alloy_server_password_b64:
+
+# OTel HTTP endpoint for the alloy to send data to
+alloy_endpoint: "https://alloy-client.apps.iaas.wcooke.me"
+
+# Groups to add the alloy user to
+# These are usually needed for log and metric collection
+alloy_user_groups:
+  - adm
+  - systemd-journal

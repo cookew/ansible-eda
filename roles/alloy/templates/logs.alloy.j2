@@ -1,0 +1,35 @@
+// Loki relabeling
+loki.relabel "journal" {
+  forward_to = []
+  rule {
+    action = "labelmap"
+    regex = "__journal__(.*)"
+    replacement = "${1}"
+  }
+  rule {
+    action = "labelmap"
+    regex = "__journal_(.*)"
+    replacement = "${1}"
+  }
+  rule {
+    source_labels = ["priority_keyword"]
+    target_label  = "level"
+  }
+  rule {
+    action = "labeldrop"
+    regex = "key_.*"
+  }
+}
+
+// Get systemd journal Logs
+loki.source.journal "default" {
+  forward_to    = [otelcol.receiver.loki.default.receiver]
+  relabel_rules = loki.relabel.journal.rules
+}
+
+// Convert logs to otel
+otelcol.receiver.loki "default" {
+  output {
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
