@@ -1,6 +1,6 @@
 - name: Ceph Cleanup
   become: true
-  hosts: worker-7.iaas.wcooke.me
+  hosts: worker_nodes
   tasks:
 
 

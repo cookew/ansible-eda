@@ -1,0 +1,35 @@
+- name: Ensure replica A record is correct
+  become: false
+  delegate_to: localhost
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}"
+    ipa_pass: "{{ freeipa_server_admin_user_password }}"
+    record_name: "{{ freeipa_server_replica_hostname | lower }}"
+    record_type: A
+    record_value: "{{ freeipa_server_ipv4_address }}"
+    state: present
+    validate_certs: false
+    zone_name: "{{ freeipa_server_domain_tld | lower }}"
+
+
+- name: Ensure replica PTR record is correct
+  become: false
+  delegate_to: localhost
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}"
+    ipa_pass: "{{ freeipa_server_admin_user_password }}"
+    record_name: "{{ freeipa_server_ipv4_address | split('.') | last }}"
+    record_type: PTR
+    record_value: "{{ freeipa_server_replica_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}."
+    state: present
+    validate_certs: false
+    zone_name: "{{ freeipa_server_reverse_dns_zone | lower }}"
+
+
+- name: Install and run
+  vars:
+    freeipa_server_hostname: "{{ freeipa_server_replica_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}"
+    # yamllint disable-line rule:line-length
+    freeipa_server_install_command: "exit-on-finished ipa-replica-install --unattended --admin-password={{ freeipa_server_admin_user_password }} --domain={{ freeipa_server_domain_tld | lower }} {% if freeipa_server_dns_forwarders is defined %}{% for forwarder in freeipa_server_dns_forwarders %}--forwarder={{ forwarder }} {% endfor %}{% endif %} --netbios-name={{ freeipa_server_domain | upper }} {{ '--no-dnssec-validation' if freeipa_server_no_dnssec_validation }} {{ '--no-ntp' if freeipa_server_no_ntp }} --principal=admin@{{ freeipa_server_domain_tld | upper }} --realm={{ freeipa_server_domain_tld | upper }} --server={{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }} {{ '--setup-adtrust' if freeipa_server_setup_adtrust }} {{ '--setup-ca' if freeipa_server_setup_ca }} {{ '--setup-dns' if freeipa_server_setup_dns }} {{ '--setup-kra' if freeipa_server_setup_kra }} {{ '--subid' if freeipa_server_setup_subid }} --skip-conncheck --force-join"
+  ansible.builtin.include_tasks:
+    file: install-run-freeipa.yaml

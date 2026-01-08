@@ -1,0 +1,115 @@
+- name: Install and run FreeIPA
+  vars:
+    freeipa_server_hostname: "{{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}"
+    # yamllint disable-line rule:line-length
+    freeipa_server_install_command: "exit-on-finished --unattended --admin-password={{ freeipa_server_admin_user_password }} {{ '--allow-zone-overlap' if freeipa_server_allow_zone_overlap }} --domain={{ freeipa_server_domain_tld | lower }} --ds-password={{ freeipa_server_directory_password }} {% if freeipa_server_dns_forwarders is defined %}{% for forwarder in freeipa_server_dns_forwarders %}--forwarder={{ forwarder }} {% endfor %}{% endif %} --netbios-name={{ freeipa_server_domain | upper }} {{ '--no-dnssec-validation' if freeipa_server_no_dnssec_validation }} {{ '--no-host-dns' if freeipa_server_no_host_dns }} {{ '--no-ntp' if freeipa_server_no_ntp }} {{ '--random-serial-numbers' if freeipa_server_random_serial_numbers }} --realm={{ freeipa_server_domain_tld | upper }} {{ '--setup-adtrust' if freeipa_server_setup_adtrust }} {{ '--setup-dns' if freeipa_server_setup_dns }} {{ '--setup-kra' if freeipa_server_setup_kra }} {{ '--subid' if freeipa_server_subid }}"
+  ansible.builtin.include_tasks:
+    file: install-run-freeipa.yaml
+
+
+- name: Copy anonymous binds template
+  become: true
+  notify: disable_anonymous_binds
+  when:
+    - freeipa_server_disable_anonymous_binds
+  ansible.builtin.template:
+    dest: "{{ freeipa_server_storage_directory }}/disable_anonymous_binds"
+    group: root
+    mode: "0600"
+    owner: root
+    serole: object_r
+    setype: container_file_t
+    seuser: system_u
+    src: disable_anonymous_binds.j2
+
+
+- name: Ensure primary A record is correct
+  become: false
+  delegate_to: localhost
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}"
+    ipa_pass: "{{ freeipa_server_admin_user_password }}"
+    record_name: "{{ freeipa_server_primary_hostname | lower }}"
+    record_type: A
+    record_value: "{{ freeipa_server_ipv4_address }}"
+    state: present
+    validate_certs: false
+    zone_name: "{{ freeipa_server_domain_tld | lower }}"
+
+
+- name: Ensure primary PTR is correct
+  become: false
+  delegate_to: localhost
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}"
+    ipa_pass: "{{ freeipa_server_admin_user_password }}"
+    record_name: "{{ freeipa_server_ipv4_address | split('.') | last }}"
+    record_type: PTR
+    record_value: "{{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}."
+    state: present
+    validate_certs: false
+    zone_name: "{{ freeipa_server_reverse_dns_zone | lower }}"
+
+
+- name: Ensure ipa-ca A record is correct
+  become: false
+  delegate_to: localhost
+  community.general.ipa_dnsrecord:
+    ipa_host: "{{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }}"
+    ipa_pass: "{{ freeipa_server_admin_user_password }}"
+    record_name: ipa-ca
+    record_type: A
+    record_value: "{{ freeipa_server_ipv4_address }}"
+    state: present
+    validate_certs: false
+    zone_name: "{{ freeipa_server_domain_tld | lower }}"
+
+
+- name: Get list of DNS zones
+  become: true
+  changed_when: false
+  register: freeipa_server_find_reverse_zone
+  containers.podman.podman_container_exec:
+    name: ipa
+    argv:
+      - /usr/bin/bash
+      - -c
+      - "kinit admin <<<{{ freeipa_server_admin_user_password }} && ipa dnszone-find --pkey-only"
+
+
+- name: Add reverse DNS zone
+  become: true
+  when:
+    - freeipa_server_reverse_dns_zone is defined
+    - not ' ' + freeipa_server_reverse_dns_zone in freeipa_server_find_reverse_zone.stdout
+  containers.podman.podman_container_exec:
+    name: ipa
+    argv:
+      - /usr/bin/bash
+      - -c
+      # yamllint disable-line rule:line-length
+      - "kinit admin <<<{{ freeipa_server_admin_user_password }} && ipa dnszone-add {{ freeipa_server_reverse_dns_zone | lower }} --allow-sync-ptr=1 --dynamic-update=1 --skip-overlap-check"
+
+
+- name: Get zone info
+  become: true
+  changed_when: false
+  register: freeipa_server_zone_info
+  containers.podman.podman_container_exec:
+    name: ipa
+    argv:
+      - /usr/bin/bash
+      - -c
+      - "kinit admin <<<{{ freeipa_server_admin_user_password }} && ipa dnszone-show {{ freeipa_server_domain_tld | lower }} --all --raw"
+
+
+- name: Enable pointer sync
+  become: true
+  when:
+    - "'idnsAllowSyncPTR: TRUE' not in freeipa_server_zone_info.stdout"
+  containers.podman.podman_container_exec:
+    name: ipa
+    argv:
+      - /usr/bin/bash
+      - -c
+      - "kinit admin <<<{{ freeipa_server_admin_user_password }} && ipa dnszone-mod {{ freeipa_server_domain_tld | lower }} --allow-sync-ptr=1"

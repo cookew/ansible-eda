@@ -1,0 +1,69 @@
+- name: Waiting for FreeIPA
+  listen: disable_anonymous_binds
+  ansible.builtin.pause:
+    seconds: 20
+
+
+# https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html-single/accessing_identity_management_services/index#proc_disabling-anonymous-binds_identity-management-security-settings
+- name: Disable anonymous binds
+  become: true
+  listen: disable_anonymous_binds
+  containers.podman.podman_container_exec:
+    # yamllint disable-line rule:line-length
+    command: "ldapmodify -x -D 'cn=Directory Manager' -h {{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }} -p 389 -w {{ freeipa_server_directory_password }} -f /data/disable_anonymous_binds"
+    detach: false
+    name: ipa
+
+
+- name: Remove disable anonymous binds template
+  become: true
+  listen: disable_anonymous_binds
+  ansible.builtin.file:
+    path: "{{ freeipa_server_storage_directory }}/disable_anonymous_binds"
+    state: absent
+
+
+- name: Restart dirsrv service
+  become: true
+  listen: disable_anonymous_binds
+  containers.podman.podman_container_exec:
+    command: systemctl restart dirsrv.target
+    detach: false
+    name: ipa
+
+
+- name: Waiting for FreeIPA
+  listen: disable_anonymous_binds
+  ansible.builtin.pause:
+    seconds: 20
+
+
+- name: Waiting for FreeIPA
+  listen: enable_auditing
+  ansible.builtin.pause:
+    seconds: 20
+
+
+# https://docs.redhat.com/en/documentation/red_hat_enterprise_linux/9/html-single/accessing_identity_management_services/index#proc_enabling-audit-logging-on-an-idm-server_assembly_idm-log-files-and-directories
+- name: Enable auditing
+  become: true
+  listen: enable_auditing
+  containers.podman.podman_container_exec:
+    # yamllint disable-line rule:line-length
+    command: "ldapmodify -x -D 'cn=Directory Manager' -h {{ freeipa_server_primary_hostname | lower }}.{{ freeipa_server_domain_tld | lower }} -p 389 -w {{ freeipa_server_directory_password }} -f /data/auditing"
+    detach: false
+    name: ipa
+
+
+- name: Remove auditing template
+  become: true
+  listen: enable_auditing
+  ansible.builtin.file:
+    path: "{{ freeipa_server_storage_directory }}/auditing"
+    state: absent
+
+
+- name: Waiting for FreeIPA
+  listen: enable_auditing
+  ansible.builtin.pause:
+    seconds: 20

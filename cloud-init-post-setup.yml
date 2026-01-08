@@ -11,8 +11,9 @@
   become: true
   gather_facts: true
   # hosts: "{{ ansible_eda.event.payload.host | default(omit) }}"
-  hosts: worker-7.iaas.wcooke.me
-#  hosts: worker-[3:4].iaas.wcooke.me
+  # hosts: control_planes
+  # hosts: worker_nodes
+  hosts: aarch64_worker_nodes
   serial: 100
   roles:
     - alloy
@@ -33,7 +34,7 @@
     - ps1_color
     - ssh_public_key
     # - subscription_manager
-    # # - sudoers
+    # - sudoers
     - systemd_journald
     - systemd_resolved
     - vim

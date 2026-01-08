@@ -145,7 +145,7 @@
 
 
 - name: Install Kubernetes
-  ansible.builtin.import_playbook: ../../cyclops-k8s/ansible-kubernetes/install.yml
+  ansible.builtin.import_playbook: ../../cyclops-k8s/ansible-kubernetes-current/install.yaml
 
 
 - name: Copy kube admin file

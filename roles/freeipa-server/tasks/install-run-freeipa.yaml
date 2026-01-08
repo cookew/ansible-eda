@@ -1,0 +1,171 @@
+- name: Create storage directory
+  become: true
+  ansible.builtin.file:
+    group: root
+    mode: "0755"
+    owner: root
+    path: "{{ freeipa_server_storage_directory }}"
+    serole: object_r
+    setype: container_file_t
+    seuser: system_u
+    state: directory
+
+
+- name: Test if already installed
+  become: true
+  register: freeipa_server_directory
+  ansible.builtin.stat:
+    get_attributes: false
+    get_checksum: false
+    get_mime: false
+    path: "{{ freeipa_server_storage_directory }}/build-id"
+
+
+# - name: Copy ipa-server-install-options template
+#   become: true
+#   when:
+#     - not freeipa_server_directory.stat.exists
+#   ansible.builtin.template:
+#     dest: "{{ freeipa_server_storage_directory }}/ipa-server-install-options"
+#     group: root
+#     mode: "0600"
+#     owner: root
+#     serole: object_r
+#     setype: container_file_t
+#     seuser: system_u
+#     src: ipa-server-install-options.j2
+
+
+- name: Display the install command
+  when:
+    - not freeipa_server_directory.stat.exists
+  ansible.builtin.debug:
+    var: freeipa_server_install_command
+
+
+- name: Install
+  become: true
+  when:
+    - not freeipa_server_directory.stat.exists
+  containers.podman.podman_container:
+    cap_add:
+      - SYS_RESOURCE
+    # cgroups: enabled
+    command: "{{ freeipa_server_install_command | default(omit) }}"
+    # command: "exit-on-finished"
+    detach: false
+    dns: "{{ freeipa_server_ipa_dns_servers | default(omit) }}"
+    dns_search: "{{ freeipa_server_domain_tld | lower }}"
+    env:
+      IPA_SERVER_HOSTNAME: "{{ freeipa_server_hostname | lower }}"
+      IPA_SERVER_IP: "{{ freeipa_server_ipv4_address | default(omit) }}"
+    force_restart: true
+    hostname: "{{ freeipa_server_hostname | lower }}"
+    image: "{{ freeipa_server_container_image }}"
+    name: ipa-install
+    publish:
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:53:53/tcp"
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:53:53/udp"
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:80:80/tcp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:88:88/tcp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:88:88/udp"
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:123:123/udp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:389:389/tcp"
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:443:443/tcp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:464:464/tcp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:464:464/udp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:636:636/tcp"
+    # read_only: true
+    # read_only_tmpfs: false
+    restart_policy: "no"
+    rm: true
+    sysctl:
+      net.ipv6.conf.all.disable_ipv6: 0
+    volume:
+      - "{{ freeipa_server_storage_directory }}:/data:Z"
+
+
+- name: Waiting for FreeIPA
+  when:
+    - not freeipa_server_directory.stat.exists
+  ansible.builtin.pause:
+    seconds: 5
+
+
+- name: Add DNS ACL entries
+  become: true
+  ansible.builtin.blockinfile:
+    append_newline: true
+    block: |
+      acl "trusted_network" {
+      localnets;
+      localhost;
+      {{ freeipa_server_dns_trusted_networks | join(";\n") }};
+      };
+    marker: "// {mark} ANSIBLE MANAGED BLOCK"
+    path: "{{ freeipa_server_storage_directory }}/etc/named/ipa-ext.conf"
+    prepend_newline: true
+
+
+- name: Add DNS options to use the ACLs
+  become: true
+  ansible.builtin.blockinfile:
+    append_newline: true
+    block: |
+      allow-recurseion { trusted_network; };
+      allow-query-cache { trusted_network; };
+    marker: "// {mark} ANSIBLE MANAGED BLOCK"
+    path: "{{ freeipa_server_storage_directory }}/etc/named/ipa-options-ext.conf"
+    prepend_newline: true
+
+
+- name: Run FreeIPA
+  become: true
+  containers.podman.podman_container:
+    detach: true
+    dns: "{{ freeipa_server_ipa_dns_servers | default(omit) }}"
+    dns_search: "{{ freeipa_server_domain_tld | lower }}"
+    env:
+      IPA_SERVER_IP: "{{ freeipa_server_ipv4_address | default(omit) }}"
+    hostname: "{{ freeipa_server_hostname | lower }}"
+    image: "{{ freeipa_server_container_image }}"
+    name: ipa
+    publish:
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:53:53/tcp"
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:53:53/udp"
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:80:80/tcp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:88:88/tcp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:88:88/udp"
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:123:123/udp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:389:389/tcp"
+      # - "{{ freeipa_server_ipv4_address | default(omit) }}:443:443/tcp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:464:464/tcp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:464:464/udp"
+      - "{{ freeipa_server_ipv4_address | default(omit) }}:636:636/tcp"
+    read_only: true
+    restart_policy: always
+    sysctl:
+      net.ipv6.conf.all.disable_ipv6: 0
+    volume:
+      - "{{ freeipa_server_storage_directory }}:/data:Z"
+
+
+- name: Waiting for FreeIPA
+  ansible.builtin.pause:
+    seconds: 5
+
+
+- name: Copy auditing template
+  become: true
+  notify: enable_auditing
+  when:
+    - freeipa_server_enable_auditing
+  ansible.builtin.template:
+    dest: "{{ freeipa_server_storage_directory }}/auditing"
+    group: root
+    mode: "0600"
+    owner: root
+    serole: object_r
+    setype: container_file_t
+    seuser: system_u
+    src: auditing.j2

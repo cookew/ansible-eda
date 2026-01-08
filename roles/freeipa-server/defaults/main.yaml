@@ -1,0 +1,61 @@
+freeipa_server_container_image: quay.io/freeipa/freeipa-server:fedora-43
+
+freeipa_server_admin_user_password: password
+freeipa_server_directory_password: password
+
+freeipa_server_primary_hostname: ipa-1
+freeipa_server_replica_hostname: ipa-2
+
+freeipa_server_storage_directory: /storage/freeipa
+
+freeipa_server_domain_tld: example.com
+freeipa_server_domain: example
+
+freeipa_server_dns_forwarders:
+  - 8.8.8.8
+  - 8.8.4.4
+freeipa_server_reverse_dns_zone: 10.in-addr.arpa
+
+freeipa_server_dns_trusted_networks:
+  - 10.0.0.0/8
+  - 172.16.0.0/12
+  - 192.168.0.0/16
+
+freeipa_server_ipa_dns_servers:
+  - 10.42.16.31
+  - 10.42.16.32
+
+freeipa_server_allow_zone_overlap: true
+freeipa_server_disable_anonymous_binds: true
+freeipa_server_enable_auditing: true
+freeipa_server_setup_adtrust: true
+freeipa_server_setup_ca: true
+freeipa_server_setup_dns: true
+freeipa_server_setup_kra: true
+freeipa_server_subid: true
+freeipa_server_random_serial_numbers: true
+freeipa_server_no_dnssec_validation: true
+freeipa_server_no_ntp: true
+freeipa_server_no_host_dns: true
+
+# freeipa_server_ipv4_address:
+
+# freeipa_server_reverse_dns_zones:
+#   - 10.in-addr.arpa
+#   - 16.172.in-addr.arpa
+#   - 17.172.in-addr.arpa
+#   - 18.172.in-addr.arpa
+#   - 19.172.in-addr.arpa
+#   - 20.172.in-addr.arpa
+#   - 21.172.in-addr.arpa
+#   - 22.172.in-addr.arpa
+#   - 23.172.in-addr.arpa
+#   - 24.172.in-addr.arpa
+#   - 25.172.in-addr.arpa
+#   - 26.172.in-addr.arpa
+#   - 27.172.in-addr.arpa
+#   - 28.172.in-addr.arpa
+#   - 29.172.in-addr.arpa
+#   - 30.172.in-addr.arpa
+#   - 31.172.in-addr.arpa
+#   - 168.192.in-addr.arpa

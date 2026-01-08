@@ -1,0 +1,19 @@
+dn: cn=config
+changetype: modify
+replace: nsslapd-auditlog-logging-enabled
+nsslapd-auditlog-logging-enabled: on
+-
+replace:nsslapd-auditlog
+nsslapd-auditlog: /var/log/dirsrv/slapd-{{ freeipa_server_domain_tld | upper | regex_replace('\.', '-') }}/audit
+-
+replace:nsslapd-auditlog-mode
+nsslapd-auditlog-mode: 600
+-
+replace:nsslapd-auditlog-maxlogsize
+nsslapd-auditlog-maxlogsize: 100
+-
+replace:nsslapd-auditlog-logrotationtime
+nsslapd-auditlog-logrotationtime: 1
+-
+replace:nsslapd-auditlog-logrotationtimeunit
+nsslapd-auditlog-logrotationtimeunit: day

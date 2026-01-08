@@ -1,0 +1,96 @@
+- name: Setup FreeIPA Primary
+  become: true
+  gather_facts: true
+  hosts: svc-1.wcooke.me
+  vars:
+    freeipa_server_container_image: quay.io/freeipa/freeipa-server:fedora-rawhide
+    freeipa_server_admin_user_password: password
+    freeipa_server_directory_password: password
+    freeipa_server_primary_hostname: ipa-1
+    freeipa_server_replica_hostname: ipa-2
+    freeipa_server_storage_directory: /storage/freeipa
+    freeipa_server_domain_tld: ipa.wcooke.me
+    freeipa_server_domain: ipa
+    freeipa_server_dns_forwarders:
+      - 10.42.16.21
+      - 10.42.16.22
+    freeipa_server_reverse_dns_zone: 10.in-addr.arpa
+    freeipa_server_dns_trusted_networks:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+    freeipa_server_ipa_dns_servers:
+      - 10.42.16.31
+      - 10.42.16.32
+    freeipa_server_allow_zone_overlap: true
+    freeipa_server_disable_anonymous_binds: true
+    freeipa_server_enable_auditing: true
+    freeipa_server_setup_adtrust: true
+    freeipa_server_setup_ca: true
+    freeipa_server_setup_dns: true
+    freeipa_server_setup_kra: true
+    freeipa_server_subid: true
+    freeipa_server_random_serial_numbers: true
+    freeipa_server_no_dnssec_validation: true
+    freeipa_server_no_ntp: true
+    freeipa_server_no_host_dns: true
+  vars_files:
+    - config.yml
+    - private_config.yml
+  tasks:
+
+    - name: Setup FreeIPA Primary
+      vars:
+        freeipa_server_ipv4_address: 10.42.16.31
+      ansible.builtin.include_role:
+        name: freeipa-server
+        tasks_from: primary.yaml
+
+
+# - name: Setup FreeIPA Replica
+#   become: true
+#   gather_facts: true
+#   hosts: svc-2.wcooke.me
+#   vars:
+#     freeipa_server_container_image: registry.wcooke.me:5000/freeipa/freeipa:latest
+#     freeipa_server_admin_user_password: password
+#     freeipa_server_directory_password: password
+#     freeipa_server_primary_hostname: ipa-1
+#     freeipa_server_replica_hostname: ipa-2
+#     freeipa_server_storage_directory: /storage/freeipa
+#     freeipa_server_domain_tld: ipa.wcooke.me
+#     freeipa_server_domain: ipa
+#     freeipa_server_dns_forwarders:
+#       - 10.42.16.21
+#       - 10.42.16.22
+#     freeipa_server_reverse_dns_zone: 10.in-addr.arpa
+#     freeipa_server_dns_trusted_networks:
+#       - 10.0.0.0/8
+#       - 172.16.0.0/12
+#       - 192.168.0.0/16
+#     freeipa_server_ipa_dns_servers:
+#       - 10.42.16.31
+#       - 10.42.16.32
+#     freeipa_server_allow_zone_overlap: true
+#     freeipa_server_disable_anonymous_binds: true
+#     freeipa_server_enable_auditing: true
+#     freeipa_server_setup_adtrust: true
+#     freeipa_server_setup_ca: true
+#     freeipa_server_setup_dns: true
+#     freeipa_server_setup_kra: true
+#     freeipa_server_subid: true
+#     freeipa_server_random_serial_numbers: true
+#     freeipa_server_no_dnssec_validation: true
+#     freeipa_server_no_ntp: true
+#     freeipa_server_no_host_dns: true
+# #   vars_files:
+#     - config.yml
+#     - private_config.yml
+#   tasks:
+
+#     - name: Setup FreeIPA Replica
+#       vars:
+#         freeipa_server_ipv4_address: 10.42.16.32
+#       ansible.builtin.include_role:
+#         name: freeipa-server
+#         tasks_from: replica.yaml
