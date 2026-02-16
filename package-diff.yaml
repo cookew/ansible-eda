@@ -42,6 +42,12 @@
         missing_packages: "{{ lookup('file', '/tmp/installed_packages.json') | from_json | difference(ansible_facts.packages) | sort }}"
         extra_packages: "{{ ansible_facts.packages | difference(lookup('file', '/tmp/installed_packages.json') | from_json) | sort }}"
 
+    - name: Remove the temporary file used for comparison
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: /tmp/installed_packages.json
+        state: absent
+
     - name: Show missing packages compared to baseline
       when:
         - baseline_host is not defined or
@@ -55,9 +61,3 @@
           (baseline_host is defined and baseline_host is false)
       ansible.builtin.debug:
         var: extra_packages
-
-    - name: Remove the temporary file used for comparison
-      delegate_to: localhost
-      ansible.builtin.file:
-        path: /tmp/installed_packages.json
-        state: absent
