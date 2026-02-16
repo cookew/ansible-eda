@@ -1,0 +1,12 @@
+[Unit]
+Description=Checks several network endpoinds and reboots the host if all are unreachable
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Restart=always
+ExecStart=/usr/local/sbin/up-checker
+TimeoutStopSec=5s
+
+[Install]
+WantedBy=multi-user.target

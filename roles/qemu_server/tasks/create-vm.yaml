@@ -1,0 +1,34 @@
+- name: Create and start the VM
+  become: false
+  changed_when: false
+  connection: local
+  delegate_to: localhost
+  ansible.builtin.command:
+    argv:
+      - virt-install
+      - --noautoconsole
+      - --boot
+      - uefi
+      - --connect
+      - "qemu+ssh://{{ virtual_server }}/system"
+      - --cdrom
+      - "{{ virtual_servers[virtual_server].vm_storage_path }}/{{ inventory_hostname }}/cloud-init.iso"
+      - --disk
+      - "{{ virtual_servers[virtual_server].vm_storage_path }}/{{ inventory_hostname }}/hdd1.qcow2"
+      - --import
+      - --memory
+      - "{{ kvm_ram }}"
+      - --name
+      - "{{ inventory_hostname }}"
+      - --network
+      - "bridge={{ virtual_servers[virtual_server].host_vm_interface }},mac={{ mac_address }},model=virtio"
+      - --os-type
+      - "{{ kvm_os_type }}"
+      - --os-variant
+      - "{{ kvm_os_variant }}"
+      - --sound
+      - none
+      - --tpm
+      - default
+      - --vcpus
+      - "{{ kvm_cpu }}"

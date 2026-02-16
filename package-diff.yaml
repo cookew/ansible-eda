@@ -1,0 +1,57 @@
+# Set baseline_host to true for one host in the inventory to designate it as the baseline for package comparison.
+# The playbook will then compare the installed packages on the other hosts against this baseline and report any differences.
+
+- name: Package Deviation Checker
+  become: true
+  gather_facts: true
+  hosts: svc-1.wcooke.me,svc-2.wcooke.me,svc-3.wcooke.me
+  tasks:
+
+    - name: Install the python-apt package
+      when:
+        - ansible_facts['os_family'] == 'Debian'
+      ansible.builtin.package:
+        name: python3-apt
+        state: present
+
+    - name: Install the python-rpm package
+      when:
+        - ansible_facts['os_family'] == 'RedHat'
+      ansible.builtin.package:
+        name: python3-rpm
+        state: present
+
+    - name: Get list of installed packages
+      ansible.builtin.package_facts:
+
+    - name: Save list of installed packages to file
+      delegate_to: localhost
+      when:
+        - baseline_host is defined
+        - baseline_host is true
+      ansible.builtin.copy:
+        content: "{{ ansible_facts.packages | to_nice_json }}"
+        dest: /tmp/installed_packages.json
+        mode: '0644'
+
+    - name: Show missing packages compared to baseline
+      when:
+        - baseline_host is not defined or
+          baseline_host is defined and
+          baseline_host is false
+      ansible.builtin.debug:
+        msg: "{{ lookup('file', '/tmp/installed_packages.json') | from_json | difference(ansible_facts.packages) | sort }}"
+
+    - name: Show extra packages compared to baseline
+      when:
+        - baseline_host is not defined or
+          baseline_host is defined and
+          baseline_host is false
+      ansible.builtin.debug:
+        msg: "{{ ansible_facts.packages | difference(lookup('file', '/tmp/installed_packages.json') | from_json) | sort }}"
+
+    - name: Remove the temporary file used for comparison
+      delegate_to: localhost
+      ansible.builtin.file:
+        path: /tmp/installed_packages.json
+        state: absent

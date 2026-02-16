@@ -145,7 +145,23 @@
 
 
 - name: Install Kubernetes
-  ansible.builtin.import_playbook: ../../cyclops-k8s/ansible-kubernetes-current/install.yaml
+  ansible.builtin.import_playbook: ../../cyclops-k8s/ansible-kubernetes-working/install.yaml
+
+
+- name: Additional modifications
+  hosts: worker_nodes
+  become: true
+  tasks:
+
+
+    - name: Allow kvm nested virtualization
+      become: true
+      ansible.builtin.copy:
+        content: options kvm_intel nested=1
+        dest: /etc/modprobe.d/kvm.conf
+        group: root
+        mode: "0644"
+        owner: root
 
 
 - name: Copy kube admin file

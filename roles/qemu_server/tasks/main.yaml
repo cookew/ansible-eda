@@ -1,0 +1,47 @@
+- name: Install packages
+  become: true
+  ansible.builtin.package:
+    name: "{{ qemu_server_distro_info[ansible_facts.distribution].packages | default(qemu_server_family_info[ansible_facts.os_family].packages) }}"
+    state: present
+
+- name: Enable services
+  become: true
+  loop: "{{ qemu_server_distro_info[ansible_facts.distribution].services | default(qemu_server_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    enabled: true
+    name: "{{ service }}"
+
+- name: Start services
+  become: true
+  loop: "{{ qemu_server_distro_info[ansible_facts.distribution].services | default(qemu_server_family_info[ansible_facts.os_family].services) }}"
+  loop_control:
+    loop_var: service
+  ansible.builtin.systemd_service:
+    name: "{{ service }}"
+    state: started
+
+- name: Copy configuration files
+  become: true
+  loop: "{{ qemu_server_distro_info[ansible_facts.distribution].templates | default(qemu_server_family_info[ansible_facts.os_family].templates) }}"
+  loop_control:
+    label: "{{ template_file.src }}"
+    loop_var: template_file
+  notify: podman_config
+  ansible.builtin.template:
+    dest: "{{ template_file.dest }}"
+    group: "{{ template_file.group }}"
+    mode: "{{ template_file.mode }}"
+    owner: "{{ template_file.owner }}"
+    src: "{{ template_file.src }}.j2"
+
+- name: Add user to libvirt group
+  become: true
+  ansible.builtin.user:
+    append: true
+    groups: libvirt
+    name: "{{ ansible_user }}"
+
+- name: Flush handlers
+  ansible.builtin.meta: flush_handlers

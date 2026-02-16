@@ -1,0 +1,61 @@
+#!/usr/bin/bash -e
+
+CHECK_COMMANDS=(
+  "ping {{ ipv4_gateway }} -c 1 -W 1"
+{% for host in groups['control_planes'] %}
+{% if host != hostvars[host]['kubernetes_api_server_bind_address'] | default(query('community.dns.lookup', hostvars[host]['ansible_host'])[0]) %}
+    "ping -c 1 -W 1 {{ hostvars[host]['kubernetes_api_server_bind_address'] | default(query('community.dns.lookup', hostvars[host]['ansible_host'])[0]) }}"
+{% endif %}
+{% endfor %}
+)
+
+FAILED_COMMAND="systemctl reboot"
+
+IP="{{ hostvars[host]['kubernetes_api_server_bind_address'] | default(query('community.dns.lookup', hostvars[host]['ansible_host'])[0]) }}"
+CURRENT_IP=$(ip -4 --json address show dev br0 | jq -r '.[0].addr_info[0].local')
+
+sleep 10
+
+echo "Want IP=${IP}"
+echo "CURRENT_IP=${CURRENT_IP}"
+if [ ! "${IP}" == "${CURRENT_IP}" ]
+then
+  ${FAILED_COMMAND}
+fi
+
+NUM=${#CHECK_COMMANDS[@]}
+echo "Number of checks to perform: ${NUM}"
+
+while :
+do
+
+  SUCCESS_COUNT=0
+
+  sleep 30
+
+  for i in "${!CHECK_COMMANDS[@]}"
+  do
+    echo "Running command: ${CHECK_COMMANDS[$i]}"
+
+    if ${CHECK_COMMANDS[$i]} > /dev/null 2>&1
+    then
+      echo "Success"
+      SUCCESS_COUNT=$(( ${SUCCESS_COUNT} + 1 ))
+    else
+      echo "Failed"
+    fi
+
+    echo "Success count: ${SUCCESS_COUNT}"
+
+    sleep 2
+
+  done
+
+  if [ ${SUCCESS_COUNT} == 0 ]
+  then
+    echo "All checks failed"
+    echo "Running failed command: ${FAILED_COMMAND}"
+    ${FAILED_COMMAND}
+  fi
+
+done

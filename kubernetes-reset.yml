@@ -1,2 +1,2 @@
 - name: Reset Kubernetes
-  ansible.builtin.import_playbook: ../../cyclops-k8s/ansible-kubernetes-current/reset.yaml
+  ansible.builtin.import_playbook: ../../cyclops-k8s/ansible-kubernetes-working/reset.yaml

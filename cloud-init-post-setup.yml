@@ -7,13 +7,15 @@
 #     - cloud_init_wait
 
 
-- name: Cloud-Init Post Setup
+- name: Cloud-init Post Setup
   become: true
   gather_facts: true
   # hosts: "{{ ansible_eda.event.payload.host | default(omit) }}"
   # hosts: control_planes
   # hosts: worker_nodes
-  hosts: aarch64_worker_nodes
+  # hosts: aarch64_worker_nodes
+  # hosts: control-amd64-2.iaas.wcooke.me
+  hosts: svc-3.wcooke.me
   serial: 100
   roles:
     - alloy
@@ -32,6 +34,7 @@
     - networkmanager
     # - open_vm_tools
     - ps1_color
+    # - qemu_server
     - ssh_public_key
     # - subscription_manager
     # - sudoers

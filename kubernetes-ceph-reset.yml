@@ -1,6 +1,7 @@
 - name: Ceph Cleanup
   become: true
-  hosts: worker_nodes
+  #hosts: worker_nodes
+  hosts: amd64-4.iaas.wcooke.me
   tasks:
 
 

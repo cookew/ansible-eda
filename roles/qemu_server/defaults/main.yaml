@@ -1,0 +1,42 @@
+qemu_server_distro_info:
+  # Debian:
+  #   packages:
+  #     - libvirt-clients-qemu
+  #     - libvirt-daemon-system
+  #     - qemu-system
+  #     - virtinst
+  #   services: []
+  #     # -
+  #   templates: []
+  #     # - dest:
+  #     #   group: root
+  #     #   mode: "0644"
+  #     #   owner: root
+  #     #   src:
+
+qemu_server_family_info:
+  Debian:
+    packages:
+      - libvirt-clients-qemu
+      - libvirt-daemon-system
+      - qemu-system
+      - virtinst
+    services: []
+      # -
+    templates: []
+      # - dest:
+      #   group: root
+      #   mode: "0644"
+      #   owner: root
+      #   src:
+#   RedHat:
+#     packages:
+#       -
+#     services:
+#       -
+#     templates:
+#       - dest:
+#         group: root
+#         mode: "0644"
+#         owner: root
+#         src:

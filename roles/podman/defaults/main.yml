@@ -1,6 +1,3 @@
----
-
-
 podman_distro_info:
   Ubuntu:
     packages:
