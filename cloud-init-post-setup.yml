@@ -15,7 +15,7 @@
   # hosts: worker_nodes
   # hosts: aarch64_worker_nodes
   # hosts: control-amd64-2.iaas.wcooke.me
-  hosts: svc-3.wcooke.me
+  hosts: cp1.iaas.wcooke.me
   serial: 100
   roles:
     - alloy
