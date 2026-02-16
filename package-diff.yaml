@@ -37,16 +37,14 @@
     - name: Show missing packages compared to baseline
       when:
         - baseline_host is not defined or
-          baseline_host is defined and
-          baseline_host is false
+          (baseline_host is defined and baseline_host is false)
       ansible.builtin.debug:
         msg: "{{ lookup('file', '/tmp/installed_packages.json') | from_json | difference(ansible_facts.packages) | sort }}"
 
     - name: Show extra packages compared to baseline
       when:
         - baseline_host is not defined or
-          baseline_host is defined and
-          baseline_host is false
+          (baseline_host is defined and baseline_host is false)
       ansible.builtin.debug:
         msg: "{{ ansible_facts.packages | difference(lookup('file', '/tmp/installed_packages.json') | from_json) | sort }}"
 
