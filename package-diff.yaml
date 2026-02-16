@@ -1,5 +1,7 @@
 # Set baseline_host to true for one host in the inventory to designate it as the baseline for package comparison.
 # The playbook will then compare the installed packages on the other hosts against this baseline and report any differences.
+# This playbook should only need privileged access to install the necessary Python packages for gathering package facts,
+# and can be run without elevated privileges for the rest of the tasks.
 
 - name: Package Deviation Checker
   become: false
