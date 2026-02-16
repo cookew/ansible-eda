@@ -2,12 +2,13 @@
 # The playbook will then compare the installed packages on the other hosts against this baseline and report any differences.
 
 - name: Package Deviation Checker
-  become: true
+  become: false
   gather_facts: true
   hosts: svc-1.wcooke.me,svc-2.wcooke.me,svc-3.wcooke.me
   tasks:
 
     - name: Install the python-apt package
+      become: true
       when:
         - ansible_facts['os_family'] == 'Debian'
       ansible.builtin.package:
@@ -15,6 +16,7 @@
         state: present
 
     - name: Install the python-rpm package
+      become: true
       when:
         - ansible_facts['os_family'] == 'RedHat'
       ansible.builtin.package:
