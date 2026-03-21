@@ -3,48 +3,53 @@
   gather_facts: true
 #  hosts: "{{ ansible_eda.event.payload.host }}"
   hosts:
-    - svc-[1-2].wcooke.me
-    - ceph-[1-4].wcooke.me
-    - kube-control-[1-3].wcooke.me
-    - kube-worker-[1-4].wcooke.me
-  vars_files:
-    - config.yml
-    - private_config.yml
+    - svc-[1-3].wcooke.me
+    - linux-desktop.wcooke.me
+    # - cp[1-3].iaas.wcooke.me
+    - aarch64-[1-4].iaas.wcooke.me
+    - amd64-[1-4].iaas.wcooke.me
   tasks:
-
 
     - name: Get mounted devices
       register: mount_facts
       ansible.builtin.mount_facts:
         include_aggregate_mounts: false
 
-
+    # This is needed for raspberry pi devices, which have a read-only /boot/firmware by default on Ubuntu
     - name: Remount /boot/firmware as read-write
       when:
+        - "'/boot/firmware' in mount_facts.ansible_facts.mount_points"
         - "'rw' not in mount_facts.ansible_facts.mount_points['/boot/firmware'].options"
       ansible.posix.mount:
         opts: rw
         path: /boot/firmware/
         state: remounted
 
+    - name: Ensure dpkg has configured everything
+      changed_when: false
+      ansible.builtin.command:
+        cmd: dpkg --configure -a
 
     - name: Update
-      register: updates
       ansible.builtin.apt:
-        cache_valid_time: 86400
+        cache_valid_time: 3600
         purge: true
         update_cache: true
         upgrade: dist
 
-
     - name: Autoclean and autoremove
-      register: updates
       ansible.builtin.apt:
         autoclean: true
         autoremove: true
 
-
     - name: Purge
-      register: updates
       ansible.builtin.apt:
         purge: true
+
+    - name: Reboot
+      throttle: 1
+      # when:
+      #   - ansible_facts['reboot_required'] is defined
+      #   - ansible_facts['reboot_required']
+      ansible.builtin.reboot:
+        msg: Rebooting to apply updates

@@ -1,7 +1,8 @@
 - name: Ceph Cleanup
   become: true
-  #hosts: worker_nodes
-  hosts: amd64-4.iaas.wcooke.me
+  hosts: worker_nodes
+  # hosts: kubernetes
+  # hosts: amd64-3.iaas.wcooke.me
   tasks:
 
 
@@ -26,7 +27,7 @@
       when:
         - ceph_disks is defined
       ansible.builtin.command:
-        cmd: "dd if=/dev/zero of={{ disk }} bs=16M count=128 oflag=direct,dsync"
+        cmd: "dd if=/dev/zero of={{ disk }} bs=16M count=512 oflag=direct,dsync"
 
 
     - name: Discard the contents of sectors on a device
