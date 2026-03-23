@@ -81,13 +81,13 @@
     owner: root
     state: directory
 
-- name: Download alloy binary
-  become: true
-  ansible.builtin.get_url:
-    dest: /tmp/alloy/{{ alloy_binary + '-linux-' + alloy_arch + '.zip' }}
-    # yamllint disable-line rule:line-length
-    url: "{{ 'https://github.com/grafana/alloy/releases/latest/download/' + alloy_binary + '-linux-' + alloy_arch + '.zip' if alloy_version == 'latest' else 'https://github.com/grafana/alloy/releases/download/' + alloy_version + '/' + alloy_binary + '-linux-' + alloy_arch + '.zip' }}"
-    mode: '0644'
+#- name: Download alloy binary
+#  become: true
+#  ansible.builtin.get_url:
+#    dest: /tmp/alloy/{{ alloy_binary + '-linux-' + alloy_arch + '.zip' }}
+#    # yamllint disable-line rule:line-length
+#    url: "{{ 'https://github.com/grafana/alloy/releases/latest/download/' + alloy_binary + '-linux-' + alloy_arch + '.zip' if alloy_version == 'latest' else 'https://github.com/grafana/alloy/releases/download/' + alloy_version + '/' + alloy_binary + '-linux-' + alloy_arch + '.zip' }}"
+#    mode: '0644'
 
 - name: Install unzip
   become: true
@@ -95,25 +95,25 @@
     name: unzip
     state: present
 
-- name: Unzip alloy binary
-  become: true
-  ansible.builtin.unarchive:
-    dest: /tmp/alloy/extracted
-    group: root
-    mode: '0755'
-    owner: root
-    remote_src: true
-    src: /tmp/alloy/{{ alloy_binary + '-linux-' + alloy_arch + '.zip' }}
+#- name: Unzip alloy binary
+#  become: true
+#  ansible.builtin.unarchive:
+#    dest: /tmp/alloy/extracted
+#    group: root
+#    mode: '0755'
+#    owner: root
+#    remote_src: true
+#    src: /tmp/alloy/{{ alloy_binary + '-linux-' + alloy_arch + '.zip' }}
 
-- name: Copy alloy binary to /usr/bin
-  become: true
-  ansible.builtin.copy:
-    dest: /usr/bin/alloy
-    group: alloy
-    mode: '0755'
-    owner: alloy
-    remote_src: true
-    src: /tmp/alloy/extracted/{{ alloy_binary + '-linux-' + alloy_arch }}
+#- name: Copy alloy binary to /usr/bin
+#  become: true
+#  ansible.builtin.copy:
+#    dest: /usr/bin/alloy
+#    group: alloy
+#    mode: '0755'
+#    owner: alloy
+#    remote_src: true
+#    src: /tmp/alloy/extracted/{{ alloy_binary + '-linux-' + alloy_arch }}
 
 - name: Remove temporary directory
   become: true
@@ -121,10 +121,16 @@
     dest: /tmp/alloy
     state: absent
 
-- name: Enable and start the alloy service
+- name: Enable the alloy service
   become: true
   ansible.builtin.systemd:
     daemon_reload: true
     enabled: true
+    name: alloy
+    state: restarted
+
+- name: Restart the alloy service
+  become: true
+  ansible.builtin.systemd:
     name: alloy
     state: restarted

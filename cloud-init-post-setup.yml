@@ -14,34 +14,36 @@
   # hosts: control_planes
   # hosts: worker_nodes
   # hosts: aarch64_worker_nodes
-  # hosts: cp2.iaas.wcooke.me
-  hosts: kubernetes
+  # hosts: kubernetes
+  # hosts: svc-[1:2].wcooke.me
+  # hosts: linux-desktop.wcooke.me
+  hosts: gw.wcooke.me
   serial: 100
   roles:
     - alloy
-    - ca_certs
-    - local_repos
-    - aliases
-    - autofs
+#    - ca_certs
+#    - local_repos
+#    - aliases
+#    - autofs
     # - firefox
-    - fstrim
+#    - fstrim
     # - google_chrome
-    - home_bin
-    - insecure
-    - logoff_timeout
-    - logrotate
-    - motd
-    - networkmanager
+#    - home_bin
+#    - insecure
+#    - logoff_timeout
+#    - logrotate
+#    - motd
+#    - networkmanager
     # - open_vm_tools
-    - ps1_color
+#    - ps1_color
     # - qemu_server
-    - ssh_public_key
+#    - ssh_public_key
     # - subscription_manager
     # - sudoers
-    - systemd
-    - systemd_journald
-    - systemd_resolved
-    - vim
+#    - systemd
+#    - systemd_journald
+#    - systemd_resolved
+#    - vim
   vars_files:
     - config.yml
     - private_config.yml

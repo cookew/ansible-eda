@@ -1,23 +1,46 @@
 // Loki relabeling
 loki.relabel "journal" {
   forward_to = []
+
   rule {
-    action = "labelmap"
-    regex = "__journal__(.*)"
+    action      = "labelmap"
+    regex       = "^__journal__(.*)"
     replacement = "${1}"
   }
   rule {
-    action = "labelmap"
-    regex = "__journal_(.*)"
+    action      = "labelmap"
+    regex       = "^__journal_(.*)"
     replacement = "${1}"
   }
+
   rule {
     source_labels = ["priority_keyword"]
     target_label  = "level"
   }
   rule {
+    source_labels = ["syslog_identifier"]
+    target_label  = "service_name"
+  }
+
+  rule {
     action = "labeldrop"
-    regex = "key_.*"
+    regex  = "^exporter"
+  }
+  rule {
+    action = "labeldrop"
+    regex  = "^job"
+  }
+  rule {
+    action = "labeldrop"
+    regex  = "^transport"
+  }
+  rule {
+    action = "labeldrop"
+    regex  = "^key_.*"
+  }
+  rule {
+    action = "labeldrop"
+    regex  = "^_.*"
   }
 }
 
@@ -30,6 +53,6 @@ loki.source.journal "default" {
 // Convert logs to otel
 otelcol.receiver.loki "default" {
   output {
-    logs    = [otelcol.processor.batch.default.input]
+    logs = [otelcol.processor.batch.default.input]
   }
 }

@@ -2,16 +2,22 @@
 # https://docs.ansible.com/ansible/latest/collections/community/general/ini_file_module.html
 
 
+- name: Ensure systemd timeout configuration directory exists
+  ansible.builtin.file:
+    mode: '0755'
+    path: /etc/systemd/system.conf.d
+    state: directory
+
 - name: Stop processes within a reasonable time frame
   become: true
   community.general.ini_file:
     group: root
-    mode: "0644"
+    mode: '0644'
     modify_inactive_option: true
     no_extra_spaces: true
     option: DefaultTimeoutStopSec
     owner: root
-    path: /etc/systemd/system.conf
+    path: /etc/systemd/system.conf.d/timeout.conf
     section: Manager
     state: present
     value: 5s
