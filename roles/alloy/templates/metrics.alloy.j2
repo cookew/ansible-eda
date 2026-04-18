@@ -1,12 +1,49 @@
 // Node exporter
 prometheus.exporter.unix "default" {
-  enable_collectors = ["ethtool", "network_route", "processes", "systemd"]
+  enable_collectors =
+    [
+      "drm",
+      "ethtool",
+      "interrupts",
+      "ksmd",
+      "lnstat",
+      "logind",
+      "meminfo_numa",
+      "mountstats",
+      "network_route",
+      "perf",
+      "processes",
+      "qdisc",
+      "runit",
+      "softirqs",
+      "sysctl",
+      "systemd",
+      "tcpstat",
+      "zoneinfo",
+    ]
 }
 
 // Scrape metrics from unix exporter
 prometheus.scrape "default" {
   targets    = prometheus.exporter.unix.default.targets
+  forward_to = [prometheus.relabel.node.receiver]
+}
+
+// Add labels to metrics from node exporter for grafana default dashboards
+prometheus.relabel "node" {
   forward_to = [otelcol.receiver.prometheus.default.receiver]
+  rule {
+    replacement  = "node-exporter"
+    target_label = "job"
+  }
+  rule {
+    replacement  = "cluster"
+    target_label = "cluster"
+  }
+  rule {
+    replacement  = "Linux"
+    target_label = "sysname"
+  }
 }
 
 // Send metrics to batch processor

@@ -49,3 +49,4 @@ listen stats
     stats   show-node
     stats   uri {{ haproxy_stats_url }}
     http-request use-service prometheus-exporter if { path {{ haproxy_stats_metrics_url }} }
+    no log
