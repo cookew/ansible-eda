@@ -2,8 +2,8 @@
 # Use 'latest' to install the latest version.
 #
 # The version must match an available binary on the alloy releases page.
-# An example version is 'v1.14.2', include the 'v' prefix.
-alloy_version: v1.14.2
+# An example version is 'v1.16.0', include the 'v' prefix.
+alloy_version: v1.16.2
 
 # This is the name of the alloy binary to download.
 # -linux-<arch>.zip will be appended to this.
