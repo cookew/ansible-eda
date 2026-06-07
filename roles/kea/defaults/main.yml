@@ -77,11 +77,13 @@ kea_dhcp4_subnet4: []
 
 kea_dhcp4_loggers:
   - name: kea-dhcp4
+    debuglevel: 0
     output_options:
       - output: stdout
         pattern: "%-5p %m\n"
     severity: INFO
-    debuglevel: 0
+  - name: kea-dhcp4.commands
+    severity: WARN
 
 
 kea_ddns_tsig_keys: []
@@ -110,17 +112,16 @@ kea_ddns_reverse_ddns_domains:
 
 kea_ddns_loggers:
   - name: kea-dhcp4
+    debuglevel: 0
     output_options:
       - output: stdout
         pattern: "%-5p %m\n"
     severity: INFO
-    debuglevel: 0
-
 
 kea_ctrl_loggers:
   - name: kea-dhcp4
+    debuglevel: 0
     output_options:
       - output: stdout
         pattern: "%-5p %m\n"
     severity: INFO
-    debuglevel: 0
