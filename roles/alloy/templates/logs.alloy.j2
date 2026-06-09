@@ -1,30 +1,48 @@
 // Loki relabeling
 loki.relabel "journal" {
-  forward_to = []
-
+  forward_to = [loki.process.cleanup.receiver]
   rule {
-    action      = "labelmap"
-    regex       = "^__journal__(.*)"
-    replacement = "${1}"
-  }
-  rule {
-    action      = "labelmap"
-    regex       = "^__journal_(.*)"
-    replacement = "${1}"
-  }
-
-  rule {
-    source_labels = ["priority_keyword"]
-    target_label  = "level"
-  }
-  rule {
-    source_labels = ["syslog_identifier"]
+    source_labels = ["journal_syslog_identifier"]
     target_label  = "service_name"
   }
+  rule {
+    action      = "labelmap"
+    regex       = "^__journal__([a-z].*)"
+    replacement = "journal_${1}"
+  }
+  rule {
+    action      = "labelmap"
+    regex       = "^__journal_([a-z].*)"
+    replacement = "journal_${1}"
+  }
+}
 
+
+// Get systemd journal Logs
+loki.source.journal "default" {
+  relabel_rules = loki.relabel.journal.rules
+  forward_to = [loki.relabel.journal.receiver]
+  labels = {
+    hostname = sys.env("HOSTNAME"),
+  }
+}
+
+
+// Process logs to create structured metadata labels
+loki.process "cleanup" {
+  stage.structured_metadata {
+    regex = "journal_.*"
+  }
+  forward_to = [loki.relabel.drop_temporary_labels.receiver]
+}
+
+
+// Drop temporary labels used for processing
+loki.relabel "drop_temporary_labels" {
+  forward_to = [otelcol.receiver.loki.default.receiver]
   rule {
     action = "labeldrop"
-    regex  = "^exporter"
+    regex  = "^journal_.*"
   }
   rule {
     action = "labeldrop"
@@ -32,23 +50,10 @@ loki.relabel "journal" {
   }
   rule {
     action = "labeldrop"
-    regex  = "^transport"
-  }
-  rule {
-    action = "labeldrop"
-    regex  = "^key_.*"
-  }
-  rule {
-    action = "labeldrop"
     regex  = "^_.*"
   }
 }
 
-// Get systemd journal Logs
-loki.source.journal "default" {
-  forward_to    = [otelcol.receiver.loki.default.receiver]
-  relabel_rules = loki.relabel.journal.rules
-}
 
 // Convert logs to otel
 otelcol.receiver.loki "default" {
