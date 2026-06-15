@@ -14,8 +14,8 @@
   # hosts: control_planes
   # hosts: worker_nodes
   # hosts: aarch64_worker_nodes
-  hosts: kubernetes
-  # hosts: svc-[1-3].wcooke.me
+  # hosts: kubernetes
+  hosts: svc-[1-3].wcooke.me
   # hosts: linux-desktop.wcooke.me
   # hosts: gw.wcooke.me
   serial: 100

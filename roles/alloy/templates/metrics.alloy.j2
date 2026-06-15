@@ -21,6 +21,9 @@ prometheus.exporter.unix "default" {
       "tcpstat",
       "zoneinfo",
     ]
+  textfile {
+    directory = "/var/lib/alloy/metrics"
+  }
 }
 
 // Scrape metrics from unix exporter

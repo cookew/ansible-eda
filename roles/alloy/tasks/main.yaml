@@ -18,6 +18,15 @@
     path: /var/lib/alloy
     state: directory
 
+- name: Create metric configuration storage directory
+  become: true
+  ansible.builtin.file:
+    group: alloy
+    mode: '0700'
+    owner: alloy
+    path: /var/lib/alloy/metrics
+    state: directory
+
 - name: Create /etc/alloy configuration directory
   become: true
   ansible.builtin.file:
