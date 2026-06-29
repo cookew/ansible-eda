@@ -1,3 +1,4 @@
+/*
 // Loki relabeling
 loki.relabel "journal" {
   forward_to = [loki.process.cleanup.receiver]
@@ -17,7 +18,6 @@ loki.relabel "journal" {
   }
 }
 
-
 // Get systemd journal Logs
 loki.source.journal "default" {
   relabel_rules = loki.relabel.journal.rules
@@ -27,7 +27,6 @@ loki.source.journal "default" {
   }
 }
 
-
 // Process logs to create structured metadata labels
 loki.process "cleanup" {
   stage.structured_metadata {
@@ -35,7 +34,6 @@ loki.process "cleanup" {
   }
   forward_to = [loki.relabel.drop_temporary_labels.receiver]
 }
-
 
 // Drop temporary labels used for processing
 loki.relabel "drop_temporary_labels" {
@@ -54,10 +52,49 @@ loki.relabel "drop_temporary_labels" {
   }
 }
 
-
 // Convert logs to otel
 otelcol.receiver.loki "default" {
   output {
     logs = [otelcol.processor.batch.default.input]
+  }
+}
+*/
+
+// Get systemd journal Logs
+loki.source.journal "default" {
+  format_as_json = true
+  forward_to = [otelcol.receiver.loki.default.receiver]
+}
+
+// Send logs to otel
+otelcol.receiver.loki "default" {
+  output {
+    logs = [otelcol.processor.transform.journald.input]
+  }
+}
+
+otelcol.processor.transform "journald" {
+  error_mode = "ignore"
+  log_statements {
+    context = "log"
+    statements = [
+      // unpack
+      `merge_maps(resource.attributes, ParseJSON(log.body), "upsert") where IsMatch(log.body, "^\\{")`,
+      `merge_maps(resource.attributes, ParseJSON(resource.attributes["MESSAGE"]), "upsert") where IsMatch(resource.attributes["MESSAGE"], "^\\{") and resource.attributes["MESSAGE"] != nil`,
+      // pupulate the log message
+      `set(log.body, nil)`,
+      `set(log.body, resource.attributes["msg"]) where resource.attributes["msg"] != nil`,
+      `set(log.body, resource.attributes["MESSAGE"]) where resource.attributes["MESSAGE"] != nil and resource.attributes["msg"] == nil`,
+      `delete_key(resource.attributes, "msg")`,
+      `delete_key(resource.attributes, "MESSAGE")`,
+       // set the service name
+      `set(resource.attributes["service.name"], resource.attributes["SYSLOG_IDENTIFIER"]) where resource.attributes["service.name"] == nil and resource.attributes["SYSLOG_IDENTIFIER"] != nil`,
+      `set(resource.attributes["service.name"], resource.attributes["_SYSTEMD_UNIT"]) where resource.attributes["service.name"] == nil and resource.attributes["_SYSTEMD_UNIT"] != nil`,
+      // set the log level
+      `set(resource.attributes["level"], resource.attributes["PRIORITY"]) where resource.attributes["level"] == nil and resource.attributes["PRIORITY"] != nil`,
+    ]
+  }
+  output {
+    logs = [otelcol.processor.transform.log_labels.input]
   }
 }

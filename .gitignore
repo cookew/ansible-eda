@@ -1,3 +1,4 @@
+.ansible
 .cache
 id_rsa*
 vars/private_config.yml

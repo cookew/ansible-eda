@@ -1,3 +1,23 @@
+// Apply host and service labels
+otelcol.processor.transform "log_labels" {
+  error_mode = "ignore"
+  log_statements {
+    context = "log"
+    statements = [
+      `merge_maps(resource.attributes, ParseJSON(body), "upsert") where IsMatch(log.body, "^\\{")`,
+      // hostname
+      `set(resource.attributes["hostname"], "` + constants.hostname + `") where resource.attributes["hostname"] == nil`,
+      `delete_key(log.attributes, "hostname") where log.attributes["hostname"] != nil`,
+      // service name
+      `set(resource.attributes["service.name"], log.attributes["service_name"]) where resource.attributes["service.name"] == nil and log.attributes["service_name"] != nil`,
+      `delete_key(log.attributes, "service_name") where log.attributes["service_name"] != nil`,
+    ]
+  }
+  output {
+    logs = [otelcol.processor.batch.default.input]
+  }
+}
+
 // Batch
 otelcol.processor.batch "default" {
   output {

@@ -1,20 +1,20 @@
 - name: Ceph Cleanup
   become: true
   # hosts: worker_nodes
-  # hosts: kubernetes
-  hosts: amd64-2.iaas.wcooke.me
+  hosts: kubernetes
+  # hosts: amd64-2.iaas.wcooke.me
   tasks:
 
 
-    # - name: Remove files and directories
-    #   become: true
-    #   loop:
-    #     - /var/lib/rook
-    #   loop_control:
-    #     loop_var: file
-    #   ansible.builtin.file:
-    #     path: "{{ file }}"
-    #     state: absent
+    - name: Remove files and directories
+      become: true
+      loop:
+        - /var/lib/rook
+      loop_control:
+        loop_var: file
+      ansible.builtin.file:
+        path: "{{ file }}"
+        state: absent
 
 
     # - name: Clear the partition table
