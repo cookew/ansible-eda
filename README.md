@@ -12,7 +12,7 @@ This is my repository of the roles I use to manage most of my infrastructure and
 1. Add your inventory files to hosts/.
 1. Create your own vars/private_config.yml from vars/private_config_example.yml.
 1. Modify the private_key_file variable in ansible.cfg to point to the correct path for your SSH private key.
-1. Run: ansible-rulebook -r rulebook.yml -i hosts/ -vv
+1. Run: ```ansible-rulebook -r rulebook.yml -i hosts/ -vv```
     1. If you are using a directory for your inventory, you have to put a "/" at the end to indicate it is a directory.
 1. On a test host, run: ```curl http://ansible-eda:6000 -d '{"host": "test-host-1", "cloud-init-setup": true}'```
 
