@@ -40,7 +40,7 @@
     mode: "0644"
     owner: root
     remote_src: true
-    src: /boot/ipxe.efi
+    src: /usr/lib/ipxe/ipxe-amd64.efi
 
 - name: Copy proxy configs
   become: true
@@ -75,31 +75,28 @@
     name: haproxy
     tasks_from: add_proxy.yaml
 
-- name: Remove existing podman iPXE Nginx NFS volume
+- name: Remove existing podman iPXE NGINX NFS volume
   become: false
   containers.podman.podman_volume:
     name: ipxe_html
-    # options:
-    #   - "device={{ ipxe_html_nfs_host }}:{{ ipxe_html_nfs_path }}"
-    #   - "o=rw"
-    #   - "type=nfs"
     state: absent
 
-- name: Run iPXE Nginx container
+- name: Run iPXE NGINX container
   become: false
   containers.podman.podman_container:
     cpus: 0.25
     detach: true
-    image: docker.io/library/nginx:1.28.0
+    image: "{{ tftp_nginx_image }}"
     image_strict: true
     image_volume: ignore
     # memory: 32m
     name: ipxe
     publish:
-      - 8002:80/tcp
+      - "{{ tftp_nginx_host_port }}:80/tcp"
     pull: missing
     # read_only: true
     read_only_tmpfs: true
+    recreate: true
     restart_policy: always
     shm_size: 8m
     shm_size_systemd: 8m

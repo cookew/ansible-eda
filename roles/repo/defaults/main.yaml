@@ -1,0 +1,2 @@
+repo_nginx_image: docker.io/library/nginx:1.31.6-alpine-slim
+repo_nginx_host_port: 8003
