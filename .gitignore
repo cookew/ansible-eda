@@ -1,6 +1,6 @@
 .ansible
 .cache
 id_rsa*
-vars/private_config.yml
+vars/private_config.yaml
 hosts/*
 __pycache__

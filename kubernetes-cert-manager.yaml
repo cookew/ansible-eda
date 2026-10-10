@@ -5,5 +5,5 @@
   roles:
     - cert_manager
   vars_files:
-    - config.yml
-    - private_config.yml
+    - config.yaml
+    - private_config.yaml

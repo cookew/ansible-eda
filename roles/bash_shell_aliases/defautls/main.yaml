@@ -1,0 +1,15 @@
+bash_shell_aliases: |
+  alias ll="ls --color -lh"
+  alias l.="ls --color -alh"
+  alias free="free -mt"
+  alias du="du -h"
+  alias df="df -h"
+  alias ip="ip -c"
+  alias ls='ls --color=auto'
+  alias grep='grep --color'
+  alias vi='vim'
+
+  export LESSCOLOR=yes
+
+  alias egrep='egrep --colour=auto'
+  alias fgrep='fgrep --colour=auto'

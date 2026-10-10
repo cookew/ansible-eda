@@ -1,0 +1,2 @@
+- name: Upgrade Kubernetes
+  ansible.builtin.import_playbook: ../../cyclops-k8s/ansible-kubernetes/upgrade.yaml

@@ -1,0 +1,8 @@
+- name: Remove subscription-manager (RedHat)
+  become: true
+  when:
+    - ansible_facts.distribution == "RedHat"
+  ansible.builtin.package:
+    name:
+      - subscription-manager
+    state: absent

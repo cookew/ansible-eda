@@ -1,4 +1,4 @@
-qemu_server_distro_info:
+qemu_server_distro_info: []
   # Debian:
   #   packages:
   #     - libvirt-clients-qemu

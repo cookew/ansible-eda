@@ -1,8 +1,0 @@
----
-
-
-dependencies:
-  - role: create_vsphere_folder
-  - role: dns
-    when:
-      - dns_records is defined

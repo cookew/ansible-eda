@@ -28,7 +28,6 @@ global
 
     ssl-dh-param-file /etc/haproxy/dhparam
 
-
 defaults
     log     global
     mode    http
@@ -38,7 +37,6 @@ defaults
     timeout connect {{ haproxy_timeout_connect }}
     timeout client  {{ haproxy_timeout_client }}
     timeout server  {{ haproxy_timeout_server }}
-
 
 listen stats
     bind    :{{ haproxy_stats_port }} ssl crt /etc/haproxy/stats.crt alpn h2,http/1.1

@@ -7,7 +7,6 @@
     owner: root
     src: up-checker.j2
 
-
 - name: Copy service file
   become: true
   ansible.builtin.template:
@@ -16,7 +15,6 @@
     mode: "0644"
     owner: root
     src: up-checker.service.j2
-
 
 - name: Enable up-checker service
   become: true

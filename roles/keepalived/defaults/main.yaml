@@ -1,0 +1,6 @@
+keepalived_family_info:
+  Debian:
+    packages:
+      - keepalived
+    services:
+      - keepalived.service

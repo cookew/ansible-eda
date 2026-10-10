@@ -1,4 +1,4 @@
-Make sure to set all of the variables in the defaults/main.yml in your own ansible vault.
+Make sure to set all of the variables in the defaults/main.yaml in your own ansible vault.
 
 This is what your inventory might look like. The ceph_ip vars must be set on your ceph_bootstrap_host.
 

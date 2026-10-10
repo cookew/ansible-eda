@@ -5,8 +5,8 @@
 #   roles:
 #     - dns
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 #   vars:
 #     dns_records:
 #       - record: "*.apps.{{ domain_name }}."
@@ -25,8 +25,8 @@
 #     - dns
 #     - raspi_server
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 
 
 # - name: Configure the proxies
@@ -35,15 +35,15 @@
 #   gather_facts: true
 #   hosts: svc-[1-2].wcooke.me
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 #   tasks:
 
 
 #     - name: Setup haproxy
 #       ansible.builtin.include_role:
 #         name: kubernetes_overrides
-#         tasks_from: proxy.yml
+#         tasks_from: proxy.yaml
 
 
 #     - name: Setup keepalived
@@ -54,7 +54,7 @@
 #           ip: "{{ kubernetes_control_plane_ip }}"
 #       ansible.builtin.include_role:
 #         name: keepalived
-#         tasks_from: create_vip.yml
+#         tasks_from: create_vip.yaml
 
 
 # - name: Install containerd.io
@@ -66,8 +66,8 @@
 #     - kubernetes-defaults
 #     - containerd
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 
 
 # - name: Install kubernetes pre-requisites
@@ -79,8 +79,8 @@
 #     - kubernetes-defaults
 #     - kubernetes
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 
 
 # - name: Pre control plane hooks
@@ -91,8 +91,8 @@
 #   - role: kubernetes-defaults
 #   - role: pre-kubernetes-control-plane
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 
 
 # - name: Install Control Planes
@@ -105,8 +105,8 @@
 #     - kubernetes-defaults
 #     - kubernetes-control-plane
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 
 
 # - name: Post control plane hooks
@@ -118,8 +118,8 @@
 #     - kubernetes-defaults
 #     - post-kubernetes-control-plane
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 
 
 # - name: Install worker nodes
@@ -131,8 +131,8 @@
 #     - kubernetes-defaults
 #     - kubernetes-worker
 #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 
 
 # - name: Post worker node hooks

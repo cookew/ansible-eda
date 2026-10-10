@@ -7,5 +7,6 @@
         "**/roles/tasks/*.yml": "ansible",
         "**/roles/tasks/*.yaml": "ansible",
         "**/roles/templates/*.j2": "ansible-jinja"
-    }
+    },
+    "ollama.endpoint": "http://10.0.0.132:11434"
 }

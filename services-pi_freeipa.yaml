@@ -35,8 +35,8 @@
     freeipa_server_no_ntp: true
     freeipa_server_no_host_dns: true
   vars_files:
-    - config.yml
-    - private_config.yml
+    - config.yaml
+    - private_config.yaml
   tasks:
 
     - name: Setup FreeIPA Primary
@@ -84,8 +84,8 @@
 #     freeipa_server_no_ntp: true
 #     freeipa_server_no_host_dns: true
 # #   vars_files:
-#     - config.yml
-#     - private_config.yml
+#     - config.yaml
+#     - private_config.yaml
 #   tasks:
 
 #     - name: Setup FreeIPA Replica

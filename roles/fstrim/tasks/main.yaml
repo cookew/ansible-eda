@@ -1,0 +1,34 @@
+- name: Enable fstrim
+  when:
+    - ansible_facts.virtualization_type in ["VMware", "kvm"]
+  block:
+
+    - name: Adding discard to mount points
+      become: true
+      loop: "{{ ansible_mounts }}"
+      loop_control:
+        label: "{{ mount.mount }}"
+        loop_var: mount
+      when:
+        - mount.fstype in ["ext4", "xfs"]
+        - not mount.options | search("discard")
+      ansible.posix.mount:
+        dump: "{{ mount.dump }}"
+        fstype: "{{ mount.fstype }}"
+        opts: "{{ mount.options }},discard"
+        passno: "{{ mount.passno }}"
+        path: "{{ mount.mount }}"
+        src: "{{ mount.device }}"
+        state: present
+
+    - name: Enable fstrim timer service
+      become: true
+      ansible.builtin.systemd_service:
+        enabled: true
+        name: fstrim.timer
+
+    - name: Start fstrim timer service
+      become: true
+      ansible.builtin.systemd_service:
+        name: fstrim.timer
+        state: started

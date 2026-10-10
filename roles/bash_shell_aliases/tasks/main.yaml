@@ -1,0 +1,10 @@
+- name: Adding bash shell aliases
+  become: true
+  when:
+    - bash_shell_aliases is defined
+  ansible.builtin.copy:
+    content: "{{ bash_shell_aliases }}"
+    dest: /etc/profile.d/zzz_aliases.sh
+    owner: root
+    group: root
+    mode: "0644"

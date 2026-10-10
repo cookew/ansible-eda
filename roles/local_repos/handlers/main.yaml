@@ -1,0 +1,20 @@
+- name: Cleaning Repo Cache
+  become: true
+  changed_when: false
+  listen: refresh-repos-debian
+  ansible.builtin.command:
+    cmd: apt clean all
+
+- name: Updating Local Repo Cache
+  become: true
+  changed_when: false
+  listen: refresh-repos-debian
+  ansible.builtin.command:
+    cmd: apt update
+
+- name: Cleaning Repo Cache
+  become: true
+  listen: refresh-repos-redhat
+  ansible.builtin.command:
+    cmd: dnf clean all
+    removes: /var/lib/dnf/history.sqlite
