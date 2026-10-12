@@ -4,17 +4,16 @@
 #  hosts: "{{ ansible_eda.event.payload.host }}"
   hosts: services
   roles:
-#    - raspi_server
-#    - autofs
+    - raspi_server
+    - autofs
     - bind
-####    - chrony
-#    - container_registry
-#    - container_registry_mirror
-####    - dns
-#    - haproxy
-####    - kea
-#    - repo
-#    - tftp
+# need to update config for ubuntu 26.04 #    - chrony
+    - container_registry
+    - container_registry_mirror
+    - haproxy
+    - kea
+    - repo
+    - tftp
   vars_files:
     - config.yaml
     - private_config.yaml
