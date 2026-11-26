@@ -6,5 +6,5 @@ tftp_distro_info:
     services:
       - tftpd-hpa.service
 
-tftp_nginx_image: docker.io/library/nginx:1.31.6-alpine-slim
+tftp_nginx_image: docker.io/library/nginx:1.31.10-alpine-slim
 tftp_nginx_host_port: 8002

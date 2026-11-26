@@ -5,5 +5,5 @@ backend ipxe
     default-server alpn h2,http/1.1 check inter 1000ms verify none
 
 {% for host in groups['services'] %}
-    server {{ host }} {{ host }}:8002
+    server {{ host }} {{ host }}:{{ tftp_nginx_host_port }}
 {% endfor %}

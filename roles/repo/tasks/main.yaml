@@ -68,7 +68,7 @@
     # memory: 32m
     name: repo
     publish:
-      - "{{ repo_nginx_host_port }}:80/tcp"
+      - "{{ repo_nginx_host_port }}:8080/tcp"
     pull: missing
     # read_only: true
     recreate: true

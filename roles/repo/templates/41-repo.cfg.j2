@@ -5,5 +5,5 @@ backend repo
     default-server alpn h2,http/1.1 check inter 1000ms verify none
 
 {% for host in groups['services'] %}
-    server {{ host }} {{ host }}:8003
+    server {{ host }} {{ host }}:{{ repo_nginx_host_port }}
 {% endfor %}

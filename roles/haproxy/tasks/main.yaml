@@ -89,7 +89,7 @@
   become: true
   notify: haproxy_config
   ansible.builtin.template:
-    dest: /etc/haproxy/conf.d/00-haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg
     group: root
     mode: "0644"
     owner: root

@@ -81,6 +81,30 @@
     name: ipxe_html
     state: absent
 
+- name: Create NGINX etc directory
+  become: true
+  notify: container_restart
+  ansible.builtin.file:
+    group: root
+    mode: "0755"
+    owner: root
+    path: /etc/nginx-ipxe
+    state: directory
+
+- name: Copy nginx config
+  become: true
+  loop:
+    - nginx-ipxe.conf
+  loop_control:
+    loop_var: file
+  notify: container_restart
+  ansible.builtin.template:
+    dest: "/etc/nginx-ipxe/{{ file }}"
+    group: root
+    mode: "0644"
+    owner: root
+    src: "{{ file }}.j2"
+
 - name: Run iPXE NGINX container
   become: false
   containers.podman.podman_container:
@@ -92,7 +116,7 @@
     # memory: 32m
     name: ipxe
     publish:
-      - "{{ tftp_nginx_host_port }}:80/tcp"
+      - "{{ tftp_nginx_host_port }}:8080/tcp"
     pull: missing
     # read_only: true
     read_only_tmpfs: true
